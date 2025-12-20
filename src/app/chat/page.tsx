@@ -16,6 +16,7 @@ export default function ChatPage() {
   const { token, user, isHydrated, hydrate } = useAuthStore()
   const { selectedUserId } = useChatStore()
   const [showContactInfo, setShowContactInfo] = useState(false)
+  const [showMobileSidebar, setShowMobileSidebar] = useState(true)
   const socket = useSocket()
 
   useEffect(() => {
@@ -28,6 +29,13 @@ export default function ChatPage() {
     }
   }, [token, isHydrated, router])
 
+  // On mobile, when a user is selected, hide sidebar and show chat
+  useEffect(() => {
+    if (selectedUserId && window.innerWidth < 768) {
+      setShowMobileSidebar(false)
+    }
+  }, [selectedUserId])
+
   if (!isHydrated || !token || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -38,18 +46,36 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-[#F3F3EE]">
-      {/* Left Navigation Bar */}
-      <LeftNavbar />
+      {/* Left Navigation Bar - Hidden on mobile */}
+      <div className="hidden md:block">
+        <LeftNavbar />
+      </div>
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
-        {/* Top Header */}
-        <TopHeader />
+        {/* Top Header - Hidden on mobile when chat is open */}
+        <div className={`${selectedUserId && !showMobileSidebar ? 'hidden md:block' : 'block'}`}>
+          <TopHeader />
+        </div>
         
         {/* Chat Area */}
-        <div className="flex-1 flex overflow-hidden p-3 gap-3 bg-[#F3F3EE]">
-          <Sidebar />
-          <ChatWindow onShowContactInfo={() => setShowContactInfo(true)} />
+        <div className="flex-1 flex overflow-hidden md:p-3 md:gap-3 bg-[#F3F3EE]">
+          {/* Sidebar - Full screen on mobile, side panel on desktop */}
+          <div className={`${
+            showMobileSidebar ? 'flex' : 'hidden'
+          } md:flex w-full md:w-auto`}>
+            <Sidebar onMobileUserSelect={() => setShowMobileSidebar(false)} />
+          </div>
+          
+          {/* Chat Window - Full screen on mobile, side panel on desktop */}
+          <div className={`${
+            !showMobileSidebar && selectedUserId ? 'flex' : 'hidden'
+          } md:flex flex-1`}>
+            <ChatWindow 
+              onShowContactInfo={() => setShowContactInfo(true)}
+              onMobileBack={() => setShowMobileSidebar(true)}
+            />
+          </div>
         </div>
       </div>
       

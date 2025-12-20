@@ -15,9 +15,9 @@ export default function TopHeader() {
   }
 
   return (
-    <div className="h-14 bg-white rounded-2xl mx-3 mt-3 flex items-center justify-between px-6 gap-6 shadow-sm">
+    <div className="h-14 bg-white md:rounded-2xl md:mx-3 md:mt-3 flex items-center justify-between px-3 md:px-6 gap-2 md:gap-6 shadow-sm">
       {/* Left - Message Title */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2 md:space-x-3">
         <svg
           className="w-5 h-5 text-gray-600"
           fill="none"
@@ -35,9 +35,9 @@ export default function TopHeader() {
       </div>
 
       {/* Right - Search Bar, Icons and Profile */}
-      <div className="flex items-center space-x-3">
-        {/* Search Bar */}
-        <div className="relative">
+      <div className="flex items-center space-x-2 md:space-x-3">
+        {/* Search Bar - Hidden on mobile */}
+        <div className="relative hidden lg:block">
           <input
             type="text"
             placeholder="Search"
@@ -59,8 +59,25 @@ export default function TopHeader() {
           <span className="absolute right-3 top-2.5 text-[11px] text-gray-400 font-medium">⌘+K</span>
         </div>
 
-        {/* Notification */}
-        <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
+        {/* Search Icon - Visible on mobile */}
+        <button className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition">
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+
+        {/* Notification - Hidden on small mobile */}
+        <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition relative">
           <svg
             className="w-5 h-5 text-gray-600"
             fill="none"
@@ -76,8 +93,8 @@ export default function TopHeader() {
           </svg>
         </button>
 
-        {/* Settings */}
-        <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+        {/* Settings - Hidden on mobile */}
+        <button className="hidden md:block p-2 hover:bg-gray-100 rounded-lg transition">
           <svg
             className="w-5 h-5 text-gray-600"
             fill="none"
@@ -103,7 +120,7 @@ export default function TopHeader() {
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg p-1 pr-3 transition"
+            className="flex items-center space-x-1 md:space-x-2 hover:bg-gray-100 rounded-lg p-1 md:pr-3 transition"
           >
             {user?.picture ? (
               <img
@@ -117,7 +134,7 @@ export default function TopHeader() {
               </div>
             )}
             <svg
-              className="w-4 h-4 text-gray-600"
+              className="w-4 h-4 text-gray-600 hidden md:block"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

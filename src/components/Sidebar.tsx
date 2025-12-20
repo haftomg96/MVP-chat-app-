@@ -13,7 +13,7 @@ interface User {
   picture: string | null
 }
 
-export default function Sidebar() {
+export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: () => void }) {
   const { token, user, logout } = useAuthStore()
   const { selectedUserId, setSelectedUser, onlineUsers } = useChatStore()
   const [users, setUsers] = useState<User[]>([])
@@ -60,8 +60,13 @@ export default function Sidebar() {
   const onlineUsersList = filteredUsers.filter((u) => onlineUsers.has(u.id))
   const offlineUsersList = filteredUsers.filter((u) => !onlineUsers.has(u.id))
 
+  const handleUserSelect = (userId: string) => {
+    setSelectedUser(userId)
+    onMobileUserSelect?.()
+  }
+
   return (
-    <div className="w-[400px] bg-white flex flex-col rounded-3xl ml-0 mr-3 my-3 shadow-sm relative">
+    <div className="w-full md:w-[400px] bg-white flex flex-col md:rounded-3xl md:ml-0 md:mr-3 md:my-3 shadow-sm relative h-full">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -135,7 +140,7 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto">
         {/* AI Chat Option */}
         <div
-          onClick={() => setSelectedUser('ai-assistant')}
+          onClick={() => handleUserSelect('ai-assistant')}
           className={`flex items-center space-x-3 p-4 cursor-pointer hover:bg-gray-50 transition ${
             selectedUserId === 'ai-assistant' ? 'bg-teal-50' : ''
           }`}
@@ -185,7 +190,7 @@ export default function Sidebar() {
                 user={u}
                 isOnline={true}
                 isSelected={selectedUserId === u.id}
-                onClick={() => setSelectedUser(u.id)}
+                onClick={() => handleUserSelect(u.id)}
               />
             ))}
           </>
@@ -205,7 +210,7 @@ export default function Sidebar() {
                 user={u}
                 isOnline={false}
                 isSelected={selectedUserId === u.id}
-                onClick={() => setSelectedUser(u.id)}
+                onClick={() => handleUserSelect(u.id)}
               />
             ))}
           </>
@@ -268,7 +273,7 @@ export default function Sidebar() {
                 <button
                   key={u.id}
                   onClick={() => {
-                    setSelectedUser(u.id)
+                    handleUserSelect(u.id)
                     setShowNewMessage(false)
                   }}
                   className="w-full flex items-center space-x-3 px-6 py-3 hover:bg-gray-50 transition"
