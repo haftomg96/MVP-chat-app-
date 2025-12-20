@@ -78,7 +78,7 @@ jobs:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment:
       name: staging
-      url: https://staging.your-domain.com
+      url: https://staging.devethix.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -111,7 +111,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: https://your-domain.com
+      url: https://chat.devethix.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
