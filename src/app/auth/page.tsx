@@ -195,7 +195,6 @@ export default function AuthPage() {
                 theme="outline"
                 size="large"
                 text={isLogin ? 'signin_with' : 'signup_with'}
-                width="100%"
               />
             </div>
           </GoogleOAuthProvider>
