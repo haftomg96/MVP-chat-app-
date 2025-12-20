@@ -52,7 +52,7 @@ export default function ContactInfo({ onClose }: { onClose: () => void }) {
       ></div>
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-[450px] bg-white shadow-2xl z-50 flex flex-col animate-slide-in rounded-l-3xl">
+      <div className="fixed right-0 top-0 h-full w-full md:w-[450px] bg-white shadow-2xl z-50 flex flex-col animate-slide-in md:rounded-l-3xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-800">Contact Info</h2>
