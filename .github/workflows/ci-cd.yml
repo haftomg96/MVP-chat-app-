@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, staging]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, staging]
 
 env:
   NODE_VERSION: '18.x'
@@ -70,12 +70,12 @@ jobs:
             prisma
           retention-days: 1
 
-  # Deploy to Staging (on develop branch)
+  # Deploy to Staging (on develop or staging branch)
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging') && github.event_name == 'push'
     environment:
       name: staging
       url: https://staging.devethix.com
@@ -96,12 +96,19 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           port: ${{ secrets.STAGING_PORT || 22 }}
           script: |
+            # Determine which branch to use
+            BRANCH="${GITHUB_REF##*/}"
+            if [ "$BRANCH" != "develop" ] && [ "$BRANCH" != "staging" ]; then
+              BRANCH="develop"
+            fi
+            echo "🌿 Deploying from branch: $BRANCH"
+            
             # Check if directory exists
             if [ ! -d "/var/www/chat-app-staging" ]; then
               echo "📁 Directory not found. Creating and cloning repository..."
               sudo mkdir -p /var/www/chat-app-staging
               sudo chown -R $USER:$USER /var/www/chat-app-staging
-              git clone -b develop https://github.com/haftomg96/MVP-chat-app-.git /var/www/chat-app-staging
+              git clone -b $BRANCH https://github.com/haftomg96/MVP-chat-app-.git /var/www/chat-app-staging
             fi
             
             # Navigate to app directory
@@ -112,15 +119,16 @@ jobs:
               echo "📦 Not a git repository. Cloning..."
               cd ..
               rm -rf chat-app-staging
-              git clone -b develop https://github.com/haftomg96/MVP-chat-app-.git chat-app-staging
+              git clone -b $BRANCH https://github.com/haftomg96/MVP-chat-app-.git chat-app-staging
               cd chat-app-staging
             fi
             
-            # Pull latest code
-            echo "📥 Pulling latest code..."
+            # Pull latest code from the correct branch
+            echo "📥 Pulling latest code from $BRANCH..."
             git fetch origin
-            git reset --hard origin/develop
-            git pull origin develop
+            git checkout $BRANCH || git checkout -b $BRANCH origin/$BRANCH
+            git reset --hard origin/$BRANCH
+            git pull origin $BRANCH
             
             # Verify ecosystem.config.js exists
             if [ ! -f "ecosystem.config.js" ]; then
