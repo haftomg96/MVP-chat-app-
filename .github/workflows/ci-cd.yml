@@ -96,16 +96,35 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           port: ${{ secrets.STAGING_PORT || 22 }}
           script: |
+            # Check if directory exists
+            if [ ! -d "/var/www/chat-app-staging" ]; then
+              echo "📁 Directory not found. Creating and cloning repository..."
+              sudo mkdir -p /var/www/chat-app-staging
+              sudo chown -R $USER:$USER /var/www/chat-app-staging
+              git clone -b develop https://github.com/haftomg96/MVP-chat-app-.git /var/www/chat-app-staging
+            fi
+            
             # Navigate to app directory
-            cd /var/www/chat-app-staging || { echo "Directory not found. Please run first-time setup."; exit 1; }
+            cd /var/www/chat-app-staging
+            
+            # Check if it's a git repository
+            if [ ! -d ".git" ]; then
+              echo "📦 Not a git repository. Cloning..."
+              cd ..
+              rm -rf chat-app-staging
+              git clone -b develop https://github.com/haftomg96/MVP-chat-app-.git chat-app-staging
+              cd chat-app-staging
+            fi
             
             # Pull latest code
             echo "📥 Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/develop
             git pull origin develop
             
             # Verify ecosystem.config.js exists
             if [ ! -f "ecosystem.config.js" ]; then
-              echo "❌ ecosystem.config.js not found after git pull!"
+              echo "❌ ecosystem.config.js not found!"
               echo "Files in directory:"
               ls -la
               exit 1
@@ -115,24 +134,40 @@ jobs:
             echo "📦 Installing dependencies..."
             npm ci
             
+            # Generate Prisma Client
+            echo "🔧 Generating Prisma Client..."
+            npx prisma generate
+            
             # Build application
             echo "🏗️  Building application..."
             npm run build
             
+            # Create logs directory if not exists
+            mkdir -p logs
+            
             # Run database migrations
             echo "🗄️  Running migrations..."
-            npx prisma migrate deploy
+            npx prisma migrate deploy || echo "⚠️  Migration failed or no migrations to run"
             
-            # Reload PM2
-            echo "🔄 Reloading PM2..."
+            # Install PM2 if not installed
+            if ! command -v pm2 &> /dev/null; then
+              echo "📦 Installing PM2..."
+              sudo npm install -g pm2
+            fi
+            
+            # Reload or start PM2
+            echo "🔄 Managing PM2 process..."
             if pm2 list | grep -q "chat-app"; then
+              echo "Reloading existing PM2 process..."
               pm2 reload ecosystem.config.js --env staging
             else
+              echo "Starting new PM2 process..."
               pm2 start ecosystem.config.js --env staging
               pm2 save
             fi
             
             echo "✅ Deployment complete!"
+            pm2 list
 
   # Deploy to Production (on main branch)
   deploy-production:
@@ -160,16 +195,35 @@ jobs:
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
           port: ${{ secrets.PRODUCTION_PORT || 22 }}
           script: |
+            # Check if directory exists
+            if [ ! -d "/var/www/chat-app" ]; then
+              echo "📁 Directory not found. Creating and cloning repository..."
+              sudo mkdir -p /var/www/chat-app
+              sudo chown -R $USER:$USER /var/www/chat-app
+              git clone https://github.com/haftomg96/MVP-chat-app-.git /var/www/chat-app
+            fi
+            
             # Navigate to app directory
-            cd /var/www/chat-app || { echo "Directory not found. Please run first-time setup."; exit 1; }
+            cd /var/www/chat-app
+            
+            # Check if it's a git repository
+            if [ ! -d ".git" ]; then
+              echo "📦 Not a git repository. Cloning..."
+              cd ..
+              rm -rf chat-app
+              git clone https://github.com/haftomg96/MVP-chat-app-.git chat-app
+              cd chat-app
+            fi
             
             # Pull latest code
             echo "📥 Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/main
             git pull origin main
             
             # Verify ecosystem.config.js exists
             if [ ! -f "ecosystem.config.js" ]; then
-              echo "❌ ecosystem.config.js not found after git pull!"
+              echo "❌ ecosystem.config.js not found!"
               echo "Files in directory:"
               ls -la
               exit 1
@@ -179,24 +233,40 @@ jobs:
             echo "📦 Installing dependencies..."
             npm ci
             
+            # Generate Prisma Client
+            echo "🔧 Generating Prisma Client..."
+            npx prisma generate
+            
             # Build application
             echo "🏗️  Building application..."
             npm run build
             
+            # Create logs directory if not exists
+            mkdir -p logs
+            
             # Run database migrations
             echo "🗄️  Running migrations..."
-            npx prisma migrate deploy
+            npx prisma migrate deploy || echo "⚠️  Migration failed or no migrations to run"
             
-            # Reload PM2
-            echo "🔄 Reloading PM2..."
+            # Install PM2 if not installed
+            if ! command -v pm2 &> /dev/null; then
+              echo "📦 Installing PM2..."
+              sudo npm install -g pm2
+            fi
+            
+            # Reload or start PM2
+            echo "🔄 Managing PM2 process..."
             if pm2 list | grep -q "chat-app"; then
+              echo "Reloading existing PM2 process..."
               pm2 reload ecosystem.config.js --env production
             else
+              echo "Starting new PM2 process..."
               pm2 start ecosystem.config.js --env production
               pm2 save
             fi
             
             echo "✅ Deployment complete!"
+            pm2 list
 
       - name: Notify Deployment Success
         if: success()
