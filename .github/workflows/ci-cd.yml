@@ -96,12 +96,43 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           port: ${{ secrets.STAGING_PORT || 22 }}
           script: |
-            cd /var/www/chat-app-staging
+            # Navigate to app directory
+            cd /var/www/chat-app-staging || { echo "Directory not found. Please run first-time setup."; exit 1; }
+            
+            # Pull latest code
+            echo "📥 Pulling latest code..."
             git pull origin develop
+            
+            # Verify ecosystem.config.js exists
+            if [ ! -f "ecosystem.config.js" ]; then
+              echo "❌ ecosystem.config.js not found after git pull!"
+              echo "Files in directory:"
+              ls -la
+              exit 1
+            fi
+            
+            # Install dependencies
+            echo "📦 Installing dependencies..."
             npm ci
+            
+            # Build application
+            echo "🏗️  Building application..."
             npm run build
+            
+            # Run database migrations
+            echo "🗄️  Running migrations..."
             npx prisma migrate deploy
-            pm2 reload ecosystem.config.js --env staging
+            
+            # Reload PM2
+            echo "🔄 Reloading PM2..."
+            if pm2 list | grep -q "chat-app"; then
+              pm2 reload ecosystem.config.js --env staging
+            else
+              pm2 start ecosystem.config.js --env staging
+              pm2 save
+            fi
+            
+            echo "✅ Deployment complete!"
 
   # Deploy to Production (on main branch)
   deploy-production:
@@ -129,12 +160,43 @@ jobs:
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
           port: ${{ secrets.PRODUCTION_PORT || 22 }}
           script: |
-            cd /var/www/chat-app
+            # Navigate to app directory
+            cd /var/www/chat-app || { echo "Directory not found. Please run first-time setup."; exit 1; }
+            
+            # Pull latest code
+            echo "📥 Pulling latest code..."
             git pull origin main
+            
+            # Verify ecosystem.config.js exists
+            if [ ! -f "ecosystem.config.js" ]; then
+              echo "❌ ecosystem.config.js not found after git pull!"
+              echo "Files in directory:"
+              ls -la
+              exit 1
+            fi
+            
+            # Install dependencies
+            echo "📦 Installing dependencies..."
             npm ci
+            
+            # Build application
+            echo "🏗️  Building application..."
             npm run build
+            
+            # Run database migrations
+            echo "🗄️  Running migrations..."
             npx prisma migrate deploy
-            pm2 reload ecosystem.config.js --env production
+            
+            # Reload PM2
+            echo "🔄 Reloading PM2..."
+            if pm2 list | grep -q "chat-app"; then
+              pm2 reload ecosystem.config.js --env production
+            else
+              pm2 start ecosystem.config.js --env production
+              pm2 save
+            fi
+            
+            echo "✅ Deployment complete!"
 
       - name: Notify Deployment Success
         if: success()
