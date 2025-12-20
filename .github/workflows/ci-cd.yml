@@ -104,23 +104,21 @@ jobs:
             echo "🌿 Deploying from branch: $BRANCH"
             
             # Check if directory exists
-            if [ ! -d "/var/www/chat-app-staging" ]; then
+            if [ ! -d "/var/www/chat-app-staging/MVP-chat-app-" ]; then
               echo "📁 Directory not found. Creating and cloning repository..."
               sudo mkdir -p /var/www/chat-app-staging
               sudo chown -R $USER:$USER /var/www/chat-app-staging
-              git clone -b $BRANCH https://github.com/haftomg96/MVP-chat-app-.git /var/www/chat-app-staging
+              cd /var/www/chat-app-staging
+              git clone -b $BRANCH https://github.com/haftomg96/MVP-chat-app-.git
             fi
             
             # Navigate to app directory
-            cd /var/www/chat-app-staging
+            cd /var/www/chat-app-staging/MVP-chat-app-
             
             # Check if it's a git repository
             if [ ! -d ".git" ]; then
-              echo "📦 Not a git repository. Cloning..."
-              cd ..
-              rm -rf chat-app-staging
-              git clone -b $BRANCH https://github.com/haftomg96/MVP-chat-app-.git chat-app-staging
-              cd chat-app-staging
+              echo "❌ Not a git repository!"
+              exit 1
             fi
             
             # Pull latest code from the correct branch
@@ -204,23 +202,21 @@ jobs:
           port: ${{ secrets.PRODUCTION_PORT || 22 }}
           script: |
             # Check if directory exists
-            if [ ! -d "/var/www/chat-app" ]; then
+            if [ ! -d "/var/www/chat-app/MVP-chat-app-" ]; then
               echo "📁 Directory not found. Creating and cloning repository..."
               sudo mkdir -p /var/www/chat-app
               sudo chown -R $USER:$USER /var/www/chat-app
-              git clone https://github.com/haftomg96/MVP-chat-app-.git /var/www/chat-app
+              cd /var/www/chat-app
+              git clone https://github.com/haftomg96/MVP-chat-app-.git
             fi
             
             # Navigate to app directory
-            cd /var/www/chat-app
+            cd /var/www/chat-app/MVP-chat-app-
             
             # Check if it's a git repository
             if [ ! -d ".git" ]; then
-              echo "📦 Not a git repository. Cloning..."
-              cd ..
-              rm -rf chat-app
-              git clone https://github.com/haftomg96/MVP-chat-app-.git chat-app
-              cd chat-app
+              echo "❌ Not a git repository!"
+              exit 1
             fi
             
             # Pull latest code
