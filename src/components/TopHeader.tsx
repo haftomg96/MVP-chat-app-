@@ -18,19 +18,11 @@ export default function TopHeader() {
     <div className="h-16 bg-white md:rounded-2xl md:mx-3 md:mt-3 flex items-center justify-between px-6 gap-6 shadow-sm border-b border-gray-100">
       {/* Left - Message Title */}
       <div className="flex items-center space-x-2.5">
-        <svg
-          className="w-5 h-5 text-gray-700"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
+        <img
+          src="/assets/message_header.svg"
+          alt="Message"
+          style={{ width: '20px', height: '20px' }}
+        />
         <h1 className="text-base font-medium text-gray-900">Message</h1>
       </div>
 
@@ -38,13 +30,8 @@ export default function TopHeader() {
       <div className="flex items-center space-x-3">
         {/* Search Bar */}
         <div className="relative hidden lg:block">
-          <input
-            type="text"
-            placeholder="Search"
-            className="w-72 pl-10 pr-20 py-2 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-white outline-none text-sm text-gray-700 placeholder:text-gray-400"
-          />
           <svg
-            className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+            className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -56,7 +43,39 @@ export default function TopHeader() {
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-gray-200 rounded text-xs text-gray-600 font-medium">
+          <input
+            type="text"
+            placeholder="Search"
+            className="outline-none text-sm text-gray-700 placeholder:text-gray-400"
+            style={{
+              width: '300px',
+              height: '32px',
+              borderRadius: '10px',
+              border: '1px solid #E8E5DF',
+              gap: '8px',
+              paddingTop: '10px',
+              paddingRight: '50px',
+              paddingBottom: '10px',
+              paddingLeft: '32px'
+            }}
+          />
+          <div 
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 font-medium pointer-events-none"
+            style={{
+              width: '40px',
+              height: '24px',
+              borderRadius: '6px',
+              gap: '4px',
+              paddingTop: '5px',
+              paddingRight: '6px',
+              paddingBottom: '5px',
+              paddingLeft: '6px',
+              backgroundColor: '#F3F3EE',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
             ⌘+K
           </div>
         </div>
@@ -79,7 +98,16 @@ export default function TopHeader() {
         </button>
 
         {/* Notification */}
-        <button className="hidden sm:block p-2 hover:bg-gray-50 rounded-lg transition relative">
+        <button 
+          className="hidden sm:flex items-center justify-center transition hover:bg-gray-50 relative"
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            border: '1px solid #E8E5DF',
+            gap: '4px'
+          }}
+        >
           <svg
             className="w-5 h-5 text-gray-700"
             fill="none"
@@ -96,7 +124,16 @@ export default function TopHeader() {
         </button>
 
         {/* Settings */}
-        <button className="hidden md:block p-2 hover:bg-gray-50 rounded-lg transition">
+        <button 
+          className="hidden md:flex items-center justify-center transition hover:bg-gray-50"
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            border: '1px solid #E8E5DF',
+            gap: '4px'
+          }}
+        >
           <svg
             className="w-5 h-5 text-gray-700"
             fill="none"
@@ -117,29 +154,61 @@ export default function TopHeader() {
           </svg>
         </button>
 
+        {/* Vertical Separator */}
+        <div 
+          style={{
+            width: '0px',
+            height: '20px',
+            borderLeft: '1px solid #E8E5DF'
+          }}
+        ></div>
+
         {/* Profile Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg pl-1 pr-2 py-1 transition"
+            className="flex items-center hover:bg-gray-50 rounded-lg transition"
+            style={{
+              width: '56px',
+              height: '32px',
+              gap: '8px',
+              padding: '0'
+            }}
           >
             {user?.picture ? (
               <img
                 src={user.picture}
                 alt={user.name || 'User'}
-                className="w-9 h-9 rounded-full  object-cover"
+                className="object-cover"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '1000px'
+                }}
               />
             ) : (
-              <div className="w-9 h-9 bg-[#1E9A80] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+              <div 
+                className="bg-[#1E9A80] flex items-center justify-center text-white text-sm font-semibold"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '1000px'
+                }}
+              >
                 {user?.name?.[0] || user?.email?.[0] || 'U'}
               </div>
             )}
             <svg
-              className="w-4 h-4 text-gray-600 hidden md:block"
+              className="hidden md:block"
+              style={{
+                width: '16px',
+                height: '16px',
+                color: '#262626'
+              }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              strokeWidth={2}
+              strokeWidth={1.5}
             >
               <path
                 strokeLinecap="round"

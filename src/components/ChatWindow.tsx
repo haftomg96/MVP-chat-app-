@@ -47,6 +47,15 @@ export default function ChatWindow({
         picture: null,
       })
     }
+    
+    // Reset typing indicator when switching conversations
+    setIsTyping(false)
+    
+    // Clear any pending typing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout)
+      setTypingTimeout(null)
+    }
   }, [selectedUserId])
 
   const markMessagesAsRead = async () => {
@@ -154,16 +163,27 @@ export default function ChatWindow({
       // Set new timeout to stop typing indicator
       const timeout = setTimeout(() => {
         console.log('⌨️ Stopping typing indicator')
-        socket.emit('typing', {
-          senderId: user?.id,
-          receiverId: selectedUserId,
-          isTyping: false,
-        })
+        if (socket && selectedUserId) {
+          socket.emit('typing', {
+            senderId: user?.id,
+            receiverId: selectedUserId,
+            isTyping: false,
+          })
+        }
       }, 2000)
 
       setTypingTimeout(timeout)
     }
   }
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout)
+      }
+    }
+  }, [typingTimeout])
 
   const fetchMessages = async () => {
     if (!selectedUserId || selectedUserId === 'ai-assistant') return
@@ -207,6 +227,19 @@ export default function ChatWindow({
     const messageContent = newMessage.trim()
     setNewMessage('')
     setLoading(true)
+
+    // Clear typing timeout and send stop typing event immediately
+    if (typingTimeout) {
+      clearTimeout(typingTimeout)
+      setTypingTimeout(null)
+    }
+    if (socket && selectedUserId && selectedUserId !== 'ai-assistant') {
+      socket.emit('typing', {
+        senderId: user?.id,
+        receiverId: selectedUserId,
+        isTyping: false,
+      })
+    }
 
     try {
       if (selectedUserId === 'ai-assistant') {
@@ -482,7 +515,8 @@ export default function ChatWindow({
             }}
           >
             <svg
-              className="w-5 h-5 text-gray-600"
+              style={{ width: '20px', height: '20px' }}
+              className="text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -506,7 +540,8 @@ export default function ChatWindow({
             }}
           >
             <svg
-              className="w-5 h-5 text-gray-600"
+              style={{ width: '20px', height: '20px' }}
+              className="text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -530,7 +565,8 @@ export default function ChatWindow({
             }}
           >
             <svg
-              className="w-5 h-5 text-gray-600"
+              style={{ width: '20px', height: '20px' }}
+              className="text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -555,7 +591,8 @@ export default function ChatWindow({
             }}
           >
             <svg
-              className="w-5 h-5 text-gray-600"
+              style={{ width: '20px', height: '20px' }}
+              className="text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -605,7 +642,7 @@ export default function ChatWindow({
                   <div
                     className={`max-w-[70%] ${
                       isSent
-                        ? 'text-white'
+                        ? ''
                         : 'bg-white text-[#111625] shadow-sm'
                     }`}
                     style={{
@@ -614,7 +651,7 @@ export default function ChatWindow({
                       borderTopRightRadius: '12px',
                       borderBottomRightRadius: isSent ? '4px' : '12px',
                       borderBottomLeftRadius: isSent ? '12px' : '4px',
-                      backgroundColor: isSent ? '#1E9A80' : undefined,
+                      backgroundColor: isSent ? '#F0FDF4' : undefined,
                     }}
                   >
                     <p 
@@ -623,7 +660,7 @@ export default function ChatWindow({
                         fontSize: '12px',
                         lineHeight: '16px',
                         fontWeight: 400,
-                        color: isSent ? '#FFFFFF' : '#111625',
+                        color: isSent ? '#111625' : '#111625',
                         letterSpacing: '0px'
                       }}
                     >
@@ -777,19 +814,11 @@ export default function ChatWindow({
               }}
               title="Voice record"
             >
-              <svg
-                className="w-5 h-5 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                />
-              </svg>
+              <img
+                src="/assets/voice_record.svg"
+                alt="Voice record"
+                style={{ width: '20px', height: '20px' }}
+              />
             </button>
 
             {/* Emoji Icon */}
@@ -804,19 +833,11 @@ export default function ChatWindow({
               }}
               title="Emoji"
             >
-              <svg
-                className="w-5 h-5 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <img
+                src="/assets/happy_mood.svg"
+                alt="Emoji"
+                style={{ width: '20px', height: '20px' }}
+              />
             </button>
 
             {/* Attachment Icon */}
@@ -831,19 +852,11 @@ export default function ChatWindow({
               }}
               title="Attach file"
             >
-              <svg
-                className="w-5 h-5 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                />
-              </svg>
+              <img
+                src="/assets/file.svg"
+                alt="Attach file"
+                style={{ width: '20px', height: '20px' }}
+              />
             </button>
 
             {/* Send Button */}
@@ -862,12 +875,12 @@ export default function ChatWindow({
               title="Send message"
             >
               <svg
-                className="w-5 h-5 text-white"
+                style={{ width: '20px', height: '20px', transform: 'rotate(45deg)' }}
+                className="text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
-                style={{ transform: 'rotate(45deg)' }}
               >
                 <path
                   strokeLinecap="round"
