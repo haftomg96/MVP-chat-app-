@@ -117,19 +117,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onClick={() => setShowNewMessage(!showNewMessage)}
             className="px-4 py-2 bg-[#1E9A80] text-white rounded-xl text-sm font-medium hover:bg-[#1E9A80] transition flex items-center space-x-2"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-              />
-            </svg>
+            <img
+              src="/assets/pencil-plus.svg"
+              alt="New Message"
+              style={{ width: '18px', height: '18px' }}
+            />
             <span>New Message</span>
           </button>
         </div>
@@ -183,52 +175,163 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
           onClick={() => handleUserSelect('ai-assistant')}
           onMouseEnter={() => setHoveredUserId('ai-assistant')}
           onMouseLeave={() => setHoveredUserId(null)}
-          className={`relative flex items-center space-x-3 px-6 py-4 cursor-pointer transition ${
-            selectedUserId === 'ai-assistant' ? 'bg-gray-50' : 'hover:bg-gray-50'
-          }`}
+          className="relative cursor-pointer transition"
+          style={{
+            height: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: '24px',
+            paddingRight: '24px',
+            gap: '12px'
+          }}
         >
-          <div className="relative flex-shrink-0">
-            <div className="w-12 h-12 bg-[#1E9A80] rounded-full flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {/* Avatar, Name, and Message Container */}
+          <div 
+            className="flex items-center flex-1"
+            style={{
+              height: '64px',
+              borderRadius: '12px',
+              padding: '12px',
+              gap: '12px',
+              backgroundColor: selectedUserId === 'ai-assistant' ? '#F3F3EE' : (hoveredUserId === 'ai-assistant' ? '#F8F8F5' : 'transparent'),
+              transition: 'background-color 0.2s ease',
+              minWidth: 0,
+              maxWidth: '100%',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div 
+                className="bg-[#1E9A80] flex items-center justify-center"
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%'
+                }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <svg
+                  className="text-white"
+                  style={{ width: '24px', height: '24px' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                   strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Name, Message, and Timestamp */}
+            <div 
+              className="flex flex-col flex-1 min-w-0"
+              style={{
+                gap: '4px',
+                overflow: 'hidden',
+                maxWidth: '100%'
+              }}
+            >
+              {/* Name and Timestamp Row */}
+              <div 
+                className="flex items-center"
+                style={{
+                  height: '20px',
+                  gap: '8px'
+                }}
+              >
+                <h3 
+                  className="truncate flex-1"
+                  style={{
+                    fontWeight: 500,
+                    fontSize: '16px',
+                    lineHeight: '20px',
+                    letterSpacing: '-0.006em',
+                    color: '#09090B'
+                  }}
+                >
+                  AI Assistant
+                </h3>
+                <span 
+                  style={{
+                    fontWeight: 400,
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    letterSpacing: '0px',
+                    color: '#A1A1AA',
+                    flexShrink: 0
+                  }}
+                >
+                  Online
+                </span>
+              </div>
+              
+              {/* Message Row */}
+              <div 
+                className="flex items-center min-w-0"
+                style={{
+                  gap: '8px',
+                  overflow: 'hidden'
+                }}
+              >
+                <p 
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    letterSpacing: '0px',
+                    color: '#A1A1AA',
+                    fontWeight: 400,
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Chat with AI for help
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-base font-semibold text-gray-900 truncate">
-                AI Assistant
-              </h3>
-              {!hoveredUserId && (
-                <span className="text-xs text-gray-400">Online</span>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 truncate">
-              Chat with AI for help
-            </p>
-          </div>
+
+          {/* Archive Button - Right Side (shows on hover) */}
           {hoveredUserId === 'ai-assistant' && (
             <button 
               onClick={(e) => {
                 e.stopPropagation()
               }}
-              className="absolute right-6 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1E9A80] text-white rounded-lg hover:bg-[#1E9A80] transition flex flex-col items-center justify-center gap-1"
+              className="bg-[#1E9A80] text-white transition flex flex-col items-center justify-center shadow-lg"
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '12px',
+                padding: '12px',
+                gap: '8px',
+                flexShrink: 0
+              }}
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <svg 
+                style={{ width: '20px', height: '20px' }}
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
                 <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
                 <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
               </svg>
-              <span className="text-xs font-medium">Archive</span>
+              <span 
+                style={{
+                  fontWeight: 500,
+                  fontSize: '12px',
+                  lineHeight: '16px',
+                  letterSpacing: '0px'
+                }}
+              >
+                Archive
+              </span>
             </button>
           )}
         </div>
@@ -336,9 +439,9 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
                 }}
               >
                 <svg
-                  className="w-4 h-4 text-gray-400 flex-shrink-0"
+                  className="w-4 h-4 flex-shrink-0"
                   fill="none"
-                  stroke="currentColor"
+                  stroke="#404040"
                   viewBox="0 0 24 24"
                 >
                   <path
@@ -376,7 +479,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
                     handleUserSelect(u.id)
                     setShowNewMessage(false)
                   }}
-                  className="w-full flex items-center space-x-3 px-6 py-3 hover:bg-gray-50 transition"
+                  className="w-full flex items-center space-x-3 px-6 py-3 hover:bg-[#F3F3EE] transition rounded-lg"
                 >
                   <div className="relative">
                     {u.picture ? (
@@ -408,20 +511,22 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
       {/* Context Menu */}
       {contextMenu && (
         <div
-          className="fixed bg-white shadow-2xl border border-gray-100 z-50"
+          className="fixed bg-white shadow-2xl z-50"
           style={{
             left: `${contextMenu.x}px`,
             top: `${contextMenu.y}px`,
-            width: '184px',
-            borderRadius: '12px',
-            padding: '4px',
-            gap: '4px',
+            width: '200px',
+            height: '264px',
+            borderRadius: '16px',
+            border: '1px solid #E5E7EB',
+            padding: '8px'
           }}
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            className="w-full text-left transition flex items-center"
             style={{
+              width: '184px',
               height: '32px',
               borderRadius: '8px',
               gap: '10px',
@@ -429,6 +534,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               paddingRight: '8px',
               paddingBottom: '6px',
               paddingLeft: '8px',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '-0.006em',
+              color: '#111625'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -437,15 +547,16 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               setContextMenu(null)
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+            <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/mark_as_read.svg" alt="Mark as unread" style={{ width: '12px', height: '12px' }} />
+            </div>
             Mark as unread
           </button>
           
           <button
-            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            className="w-full text-left transition flex items-center"
             style={{
+              width: '184px',
               height: '32px',
               borderRadius: '8px',
               gap: '10px',
@@ -453,6 +564,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               paddingRight: '8px',
               paddingBottom: '6px',
               paddingLeft: '8px',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '-0.006em',
+              color: '#111625'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -461,15 +577,16 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               setContextMenu(null)
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
+            <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/archive.svg" alt="Archive" style={{ width: '12px', height: '12px' }} />
+            </div>
             Archive
           </button>
           
           <button
-            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            className="w-full text-left transition flex items-center"
             style={{
+              width: '184px',
               height: '32px',
               borderRadius: '8px',
               gap: '10px',
@@ -477,6 +594,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               paddingRight: '8px',
               paddingBottom: '6px',
               paddingLeft: '8px',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '-0.006em',
+              color: '#111625'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -485,10 +607,9 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               setContextMenu(null)
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-            </svg>
+            <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/mute.svg" alt="Mute" style={{ width: '12px', height: '12px' }} />
+            </div>
             Mute
             <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -496,8 +617,9 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
           </button>
           
           <button
-            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            className="w-full text-left transition flex items-center"
             style={{
+              width: '184px',
               height: '32px',
               borderRadius: '8px',
               gap: '10px',
@@ -505,6 +627,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               paddingRight: '8px',
               paddingBottom: '6px',
               paddingLeft: '8px',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '-0.006em',
+              color: '#111625'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -513,15 +640,16 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               setContextMenu(null)
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/contact.svg" alt="Contact info" style={{ width: '12px', height: '12px' }} />
+            </div>
             Contact info
           </button>
           
           <button
-            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            className="w-full text-left transition flex items-center"
             style={{
+              width: '184px',
               height: '32px',
               borderRadius: '8px',
               gap: '10px',
@@ -529,6 +657,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               paddingRight: '8px',
               paddingBottom: '6px',
               paddingLeft: '8px',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '-0.006em',
+              color: '#111625'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -537,17 +670,18 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               setContextMenu(null)
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
+            <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/export.svg" alt="Export chat" style={{ width: '12px', height: '12px' }} />
+            </div>
             Export chat
           </button>
           
           <div style={{ borderTop: '1px solid #E5E7EB', margin: '4px 0' }}></div>
           
           <button
-            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            className="w-full text-left transition flex items-center"
             style={{
+              width: '184px',
               height: '32px',
               borderRadius: '8px',
               gap: '10px',
@@ -555,6 +689,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               paddingRight: '8px',
               paddingBottom: '6px',
               paddingLeft: '8px',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '-0.006em',
+              color: '#111625'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -563,15 +702,16 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               setContextMenu(null)
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/clear.svg" alt="Clear chat" style={{ width: '12px', height: '12px' }} />
+            </div>
             Clear chat
           </button>
           
           <button
-            className="w-full text-left transition flex items-center text-sm text-red-600"
+            className="w-full text-left transition flex items-center"
             style={{
+              width: '184px',
               height: '32px',
               borderRadius: '8px',
               gap: '10px',
@@ -579,6 +719,11 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               paddingRight: '8px',
               paddingBottom: '6px',
               paddingLeft: '8px',
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '-0.006em',
+              color: '#EF4444'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -587,9 +732,9 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               setContextMenu(null)
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/delete.svg" alt="Delete chat" style={{ width: '12px', height: '12px' }} />
+            </div>
             Delete chat
           </button>
         </div>
@@ -641,77 +786,169 @@ function UserItem({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       onContextMenu={onContextMenu}
-      className={`relative flex items-center space-x-3 px-6 py-4 cursor-pointer transition ${
-        isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'
-      }`}
+      className="relative cursor-pointer transition"
+      style={{
+        height: '80px',
+        display: 'flex',
+        alignItems: 'center',
+        paddingLeft: '24px',
+        paddingRight: '24px',
+        gap: '12px'
+      }}
     >
-      {/* Unread Badge - Left Side */}
-      {hasUnreadMessage && !isHovered && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#1E9A80] text-white px-3 py-6 rounded-r-xl flex flex-col items-center justify-center gap-1 shadow-md z-10">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-          </svg>
-          <span className="text-xs font-medium">Unread</span>
-        </div>
-      )}
-
-      <div className="relative flex-shrink-0">
-        {user.picture ? (
+      {/* Avatar, Name, and Message Container */}
+      <div 
+        className="flex items-center flex-1"
+        style={{
+          height: '64px',
+          borderRadius: '12px',
+          padding: '12px',
+          gap: '12px',
+          backgroundColor: isSelected ? '#F3F3EE' : (isHovered ? '#F8F8F5' : 'transparent'),
+          transition: 'background-color 0.2s ease',
+          minWidth: 0,
+          maxWidth: '100%',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          {user.picture ? (
             <img
-            src={user.picture}
-            alt={user.name || 'User'}
-            className="w-12 h-12 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-12 h-12 bg-[#1E9A80] rounded-full flex items-center justify-center text-white font-semibold">
-            {user.name?.[0] || user.email[0]} 
-          </div>
-        )}
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base font-semibold text-gray-900 truncate">
-            {user.name || user.email}
-          </h3>
-          {!isHovered && (
-            <span className="text-xs text-gray-400">{timeAgo}</span>
+              src={user.picture}
+              alt={user.name || 'User'}
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <div 
+              className="bg-[#1E9A80] flex items-center justify-center text-white font-semibold"
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                fontSize: '16px'
+              }}
+            >
+              {user.name?.[0] || user.email[0]} 
+            </div>
           )}
         </div>
-        <div className="flex items-center space-x-2">
-          <p className={`text-sm truncate flex-1 ${hasUnreadMessage ? 'text-gray-900 font-semibold' : 'text-gray-500'}`}>
-            {lastMessage?.content || 'No messages yet'}
-          </p>
-          {!isHovered && isSentByMe && lastMessage && (
-            <span className="flex-shrink-0">
-              {lastMessage.isRead ? (
-                // Double checkmark (read) - colored
-                <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                  <path
-                    fillRule="evenodd"
-                    d="M14.707 5.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L8 10.586l5.293-5.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                    opacity="0.6"
-                  />
-                </svg>
-              ) : (
-                // Single checkmark (sent) - gray
-                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
+        
+        {/* Name, Message, and Timestamp */}
+        <div 
+          className="flex flex-col flex-1 min-w-0"
+          style={{
+            gap: '4px',
+            overflow: 'hidden',
+            maxWidth: '100%'
+          }}
+        >
+          {/* Name and Timestamp Row */}
+          <div 
+            className="flex items-center"
+            style={{
+              height: '20px',
+              gap: '8px'
+            }}
+          >
+            <h3 
+              className="truncate flex-1"
+              style={{
+                fontWeight: 500,
+                fontSize: '16px',
+                lineHeight: '20px',
+                letterSpacing: '-0.006em',
+                color: '#09090B'
+              }}
+            >
+              {user.name || user.email}
+            </h3>
+            <span 
+              style={{
+                fontWeight: 400,
+                fontSize: '12px',
+                lineHeight: '16px',
+                letterSpacing: '0px',
+                color: '#A1A1AA',
+                flexShrink: 0
+              }}
+            >
+              {timeAgo}
             </span>
-          )}
+          </div>
+          
+          {/* Message and Check Icon Row */}
+          <div 
+            className="flex items-center min-w-0"
+            style={{
+              gap: '8px',
+              overflow: 'hidden'
+            }}
+          >
+            <p 
+              style={{
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0px',
+                color: '#A1A1AA',
+                fontWeight: 400,
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {lastMessage?.content || 'No messages yet'}
+            </p>
+            {isSentByMe && lastMessage && (
+              <span 
+                className="flex-shrink-0"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {lastMessage.isRead ? (
+                  // Double checkmark (read) - #1E9A80
+                  <svg
+                    width="14"
+                    height="10"
+                    viewBox="0 0 16 15"
+                    fill="none"
+                    style={{ color: '#1E9A80' }}
+                  >
+                    <path
+                      d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                ) : (
+                  // Single checkmark (sent) - #8B8B8B
+                  <svg
+                    width="12"
+                    height="10"
+                    viewBox="0 0 12 11"
+                    fill="none"
+                    style={{ color: '#8B8B8B' }}
+                  >
+                    <path
+                      d="M11.01 2.316l-.478-.372a.365.365 0 0 0-.51.063L4.566 8.879a.32.32 0 0 1-.484.033L1.891 6.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -721,13 +958,34 @@ function UserItem({
           onClick={(e) => {
             e.stopPropagation()
           }}
-          className="absolute right-6 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1E9A80] text-white rounded-lg hover:bg-[#1E9A80] transition flex flex-col items-center justify-center gap-1 shadow-md z-10"
+          className="bg-[#1E9A80] text-white transition flex flex-col items-center justify-center shadow-lg"
+          style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '12px',
+            padding: '12px',
+            gap: '8px',
+            flexShrink: 0
+          }}
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
-            <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
+          <svg 
+            style={{ width: '20px', height: '20px' }}
+            fill="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path d="M5 4a2 2 0 100 4h14a2 2 0 100-4H5z" />
+            <path fillRule="evenodd" d="M4 9h16v9a2 2 0 01-2 2H6a2 2 0 01-2-2V9zm6 4a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clipRule="evenodd" />
           </svg>
-          <span className="text-xs font-medium">Archive</span>
+          <span 
+            style={{
+              fontWeight: 500,
+              fontSize: '12px',
+              lineHeight: '16px',
+              letterSpacing: '0px'
+            }}
+          >
+            Archive
+          </span>
         </button>
       )}
     </div>

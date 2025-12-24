@@ -14,103 +14,156 @@ export default function LeftNavbar() {
         <div className="pt-6">
           <button 
             onClick={() => setShowProfileModal(!showProfileModal)}
-            className="w-12 h-12 bg-[#1E9A80] rounded-full flex items-center justify-center hover:bg-[#1E9A80] transition cursor-pointer shadow-sm"
+            className="hover:opacity-80 transition cursor-pointer"
           >
-            <svg
-              className="w-7 h-7 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
+            <img
+              src="/assets/Container.svg"
+              alt="Logo"
+              style={{ width: '44px', height: '44px' }}
+            />
           </button>
         </div>
 
         {/* Navigation Icons - Aligned with "All Message" */}
         <nav className="flex flex-col items-center space-y-6 absolute top-[88px]">
           {/* Home */}
-          <button className="p-2.5 hover:bg-gray-200/50 rounded-xl transition text-gray-700">
-            <svg
-              className="w-6 h-6"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-            </svg>
+          <button 
+            className="transition"
+            style={{
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              maxWidth: '44px',
+              borderRadius: '8px',
+              gap: '8px',
+              paddingTop: '8px',
+              paddingRight: '12px',
+              paddingBottom: '8px',
+              paddingLeft: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <img
+              src="/assets/home.svg"
+              alt="Home"
+              style={{ width: '20px', height: '20px' }}
+            />
           </button>
 
           {/* Messages - Active */}
-          <button className="p-3 bg-white border-2 border-primary rounded-xl transition text-primary relative shadow-sm">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
+          <button 
+            className="transition relative"
+            style={{
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              maxWidth: '44px',
+              borderRadius: '8px',
+              border: '1px solid #1E9A80',
+              gap: '8px',
+              paddingTop: '8px',
+              paddingRight: '12px',
+              paddingBottom: '8px',
+              paddingLeft: '12px',
+              backgroundColor: '#F0FDF4',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <img
+              src="/assets/Task Icon.svg"
+              alt="Messages"
+              style={{ width: '20px', height: '20px' }}
+            />
           </button>
 
           {/* Compass/Explore */}
-          <button className="p-2.5 hover:bg-gray-200/50 rounded-xl transition text-gray-600">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+          <button 
+            className="transition"
+            style={{
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              maxWidth: '44px',
+              borderRadius: '8px',
+              gap: '8px',
+              paddingTop: '8px',
+              paddingRight: '12px',
+              paddingBottom: '8px',
+              paddingLeft: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <img
+              src="/assets/Compass.svg"
+              alt="Explore"
+              style={{ width: '20px', height: '20px' }}
+            />
           </button>
 
           {/* Folder/Files */}
-          <button className="p-2.5 hover:bg-gray-200/50 rounded-xl transition text-gray-600">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-              />
-            </svg>
+          <button 
+            className="transition"
+            style={{
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              maxWidth: '44px',
+              borderRadius: '8px',
+              gap: '8px',
+              paddingTop: '8px',
+              paddingRight: '12px',
+              paddingBottom: '8px',
+              paddingLeft: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <img
+              src="/assets/Folder.svg"
+              alt="Folders"
+              style={{ width: '20px', height: '20px' }}
+            />
           </button>
 
           {/* Document/Notes */}
-          <button className="p-2.5 hover:bg-gray-200/50 rounded-xl transition text-gray-600">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
+          <button 
+            className="transition"
+            style={{
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              maxWidth: '44px',
+              borderRadius: '8px',
+              gap: '8px',
+              paddingTop: '8px',
+              paddingRight: '12px',
+              paddingBottom: '8px',
+              paddingLeft: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <img
+              src="/assets/image.svg"
+              alt="Documents"
+              style={{ width: '20px', height: '20px' }}
+            />
           </button>
         </nav>
 
@@ -118,19 +171,11 @@ export default function LeftNavbar() {
         <div className="flex flex-col items-center space-y-6 absolute bottom-6">
           {/* Sparkle/Star Icon */}
           <button className="p-2.5 hover:bg-gray-200/50 rounded-xl transition text-gray-600">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"
-              />
-            </svg>
+            <img
+              src="/assets/StarFour.svg"
+              alt="Star"
+              style={{ width: '20px', height: '20px' }}
+            />
           </button>
 
           {/* User Avatar */}
@@ -166,20 +211,22 @@ export default function LeftNavbar() {
             style={{
               left: '12px',
               top: '74px',
-              width: '297px',
+              width: '307px',
+              height: '428px',
               borderRadius: '16px',
               gap: '4px',
-              padding:"12px"
+              paddingTop: '4px',
+              paddingBottom: '0px'
             }}
           >
             {/* Go back to dashboard and Rename file section */}
             <div 
               style={{
-                width: '287px',
+                width: '307px',
                 height: '92px',
                 gap: '8px',
-                paddingRight: '10px',
-                paddingLeft: '10px',
+                paddingRight: '4px',
+                paddingLeft: '4px',
                 display: 'flex',
                 flexDirection: 'column'
               }}
@@ -189,6 +236,8 @@ export default function LeftNavbar() {
                 onClick={() => setShowProfileModal(false)}
                 className="flex items-center transition"
                 style={{
+                  width: '287px',
+                  height: '40px',
                   borderRadius: '8px',
                   padding: '6px',
                   gap: '8px'
@@ -197,35 +246,48 @@ export default function LeftNavbar() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <div 
-                  className="flex items-center justify-center"
                   style={{
-                    borderRadius: '6px',
-                    backgroundColor: '#F3F3EE',
-                    padding: '6px'
+                    width: '275px',
+                    height: '28px',
+                    gap: '8px',
+                    display: 'flex',
+                    alignItems: 'center'
                   }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
+                  <div 
+                    className="flex items-center justify-center"
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      backgroundColor: '#F3F3EE',
+                      padding: '6px',
+                      gap: '10px'
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </div>
+                  <span 
+                    style={{
+                      fontWeight: 500,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      letterSpacing: '-0.01em',
+                      color: '#09090B'
+                    }}
+                  >
+                    Go back to dashboard
+                  </span>
                 </div>
-                <span 
-                  style={{
-                    fontWeight: 500,
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    letterSpacing: '-0.01em',
-                    color: '#09090B'
-                  }}
-                >
-                  Go back to dashboard
-                </span>
               </button>
 
               {/* Rename file */}
               <button 
                 className="flex items-center transition"
                 style={{
-                  width: '267px',
+                  width: '287px',
                   height: '40px',
                   borderRadius: '8px',
                   padding: '6px',
@@ -236,36 +298,67 @@ export default function LeftNavbar() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F8F8F5'}
               >
                 <div 
-                  className="flex items-center justify-center"
                   style={{
-                    width: '28px',
+                    width: '275px',
                     height: '28px',
-                    borderRadius: '6px',
-                    backgroundColor: '#F3F3EE',
-                    padding: '6px'
+                    gap: '8px',
+                    display: 'flex',
+                    alignItems: 'center'
                   }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
+                  <div 
+                    className="flex items-center justify-center"
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      backgroundColor: '#FFFFFF',
+                      padding: '6px',
+                      gap: '10px'
+                    }}
+                  >
+                    <img
+                      src="/assets/Pencil.svg"
+                      alt="Rename"
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                  </div>
+                  <span 
+                    style={{
+                      fontWeight: 500,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      letterSpacing: '-0.01em',
+                      color: '#09090B'
+                    }}
+                  >
+                    Rename file
+                  </span>
                 </div>
-                <span 
-                  style={{
-                    fontWeight: 500,
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    letterSpacing: '-0.01em',
-                    color: '#09090B'
-                  }}
-                >
-                  Rename file
-                </span>
               </button>
+            </div>
+
+            {/* Separator Line */}
+            <div 
+              style={{
+                width: '307px',
+                height: '0px',
+                gap: '8px',
+                paddingRight: '10px',
+                paddingLeft: '10px'
+              }}
+            >
+              <div 
+                style={{
+                  width: '287px',
+                  height: '1px',
+                  backgroundColor: '#E8E5DF'
+                }}
+              ></div>
             </div>
 
             {/* Name and Email section */}
             <div 
-              className="flex items-center"
               style={{
                 width: '307px',
                 height: '56px',
@@ -274,54 +367,51 @@ export default function LeftNavbar() {
                 paddingLeft: '4px'
               }}
             >
-              {user?.picture ? (
-                <img
-                  src={user.picture}
-                  alt={user.name || 'User'}
-                  className="rounded-full object-cover"
-                  style={{
-                    width: '40px',
-                    height: '40px'
-                  }}
-                />
-              ) : (
+              <div 
+                className="flex items-center"
+                style={{
+                  width: '299px',
+                  height: '56px',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  gap: '12px'
+                }}
+              >
                 <div 
-                  className="bg-[#1E9A80] flex items-center justify-center text-white font-semibold"
+                  className="flex-1 min-w-0"
                   style={{
-                    width: '40px',
+                    width: '283px',
                     height: '40px',
-                    borderRadius: '50%',
-                    fontSize: '14px'
+                    gap: '2px',
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}
                 >
-                  {user?.name ? user.name.slice(0, 2).toUpperCase() : user?.email?.slice(0, 2).toUpperCase() || 'U'}
+                  <p 
+                    className="truncate"
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      letterSpacing: '-0.01em',
+                      color: '#1C1C1C'
+                    }}
+                  >
+                    {user?.name || 'User'}
+                  </p>
+                  <p 
+                    className="truncate"
+                    style={{
+                      fontWeight: 400,
+                      fontSize: '12px',
+                      lineHeight: '150%',
+                      letterSpacing: '-0.01em',
+                      color: '#8B8B8B'
+                    }}
+                  >
+                    {user?.email}
+                  </p>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p 
-                  className="truncate"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    letterSpacing: '-0.01em',
-                    color: '#1C1C1C'
-                  }}
-                >
-                  {user?.name || 'User'}
-                </p>
-                <p 
-                  className="truncate"
-                  style={{
-                    fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    letterSpacing: '-0.01em',
-                    color: '#8B8B8B'
-                  }}
-                >
-                  {user?.email}
-                </p>
               </div>
             </div>
 
@@ -330,146 +420,423 @@ export default function LeftNavbar() {
               style={{
                 width: '307px',
                 height: '108px',
-                gap: '8px',
-                paddingRight: '4px',
-                paddingLeft: '4px',
-                display: 'flex',
-                flexDirection: 'column'
+                gap: '8px'
               }}
             >
-              {/* Credits and Renews */}
               <div 
                 style={{
-                  width: '271px',
-                  height: '40px',
+                  width: '307px',
+                  height: '100px',
                   gap: '8px',
-                  display: 'flex',
-                  flexDirection: 'column'
+                  paddingRight: '10px',
+                  paddingLeft: '10px'
                 }}
               >
-                <div className="flex justify-between items-center">
-                  <span 
-                    style={{
-                      fontWeight: 400,
-                      fontSize: '12px',
-                      color: '#8B8B8B'
-                    }}
-                  >
-                    Credits
-                  </span>
-                  <span 
-                    style={{
-                      fontWeight: 400,
-                      fontSize: '12px',
-                      color: '#8B8B8B'
-                    }}
-                  >
-                    Renews in
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span 
-                    style={{
-                      fontWeight: 700,
-                      fontSize: '16px',
-                      color: '#1C1C1C'
-                    }}
-                  >
-                    20 left
-                  </span>
-                  <span 
-                    style={{
-                      fontWeight: 700,
-                      fontSize: '16px',
-                      color: '#1C1C1C'
-                    }}
-                  >
-                    6h 24m
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div 
-                style={{
-                  width: '271px',
-                  height: '36px',
-                  gap: '8px',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}
-              >
-                <div className="w-full bg-gray-200 rounded-full" style={{ height: '8px' }}>
+                <div 
+                  style={{
+                    width: '287px',
+                    height: '100px',
+                    borderRadius: '8px',
+                    padding: '8px',
+                    gap: '8px',
+                    backgroundColor: '#F8F8F5',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
+                  {/* Credits, 20 left, Renews in, 6h 24m */}
                   <div 
-                    className="rounded-full transition-all" 
-                    style={{ 
-                      width: '80%',
-                      height: '8px',
-                      backgroundColor: '#1E9A80'
-                    }}
-                  ></div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span 
                     style={{
-                      fontWeight: 400,
-                      fontSize: '12px',
-                      color: '#8B8B8B'
+                      width: '271px',
+                      height: '40px',
+                      gap: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between'
                     }}
                   >
-                    5 of 25 used today
-                  </span>
-                  <span 
+                    {/* Credits and 20 left */}
+                    <div 
+                      style={{
+                        width: '131.5px',
+                        height: '40px',
+                        gap: '2px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}
+                    >
+                      <span 
+                        style={{
+                          fontWeight: 400,
+                          fontSize: '12px',
+                          lineHeight: '18px',
+                          letterSpacing: '0%',
+                          color: '#8B8B8B'
+                        }}
+                      >
+                        Credits
+                      </span>
+                      <span 
+                        style={{
+                          fontWeight: 500,
+                          fontSize: '14px',
+                          lineHeight: '20px',
+                          letterSpacing: '0%',
+                          color: '#09090B'
+                        }}
+                      >
+                        20 left
+                      </span>
+                    </div>
+
+                    {/* Renews in and 6h 24m */}
+                    <div 
+                      style={{
+                        width: '131.5px',
+                        height: '40px',
+                        gap: '2px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-end'
+                      }}
+                    >
+                      <span 
+                        style={{
+                          fontWeight: 400,
+                          fontSize: '12px',
+                          lineHeight: '18px',
+                          letterSpacing: '0%',
+                          textAlign: 'right',
+                          color: '#8B8B8B'
+                        }}
+                      >
+                        Renews in
+                      </span>
+                      <span 
+                        style={{
+                          fontWeight: 500,
+                          fontSize: '14px',
+                          lineHeight: '20px',
+                          letterSpacing: '0%',
+                          textAlign: 'right',
+                          color: '#09090B'
+                        }}
+                      >
+                        6h 24m
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div 
                     style={{
-                      fontWeight: 500,
-                      fontSize: '12px',
-                      color: '#1E9A80'
+                      width: '271px',
+                      height: '36px',
+                      gap: '8px',
+                      display: 'flex',
+                      flexDirection: 'column'
                     }}
                   >
-                    +25 tomorrow
-                  </span>
+                    {/* Progress bar itself */}
+                    <div 
+                      style={{
+                        width: '271px',
+                        height: '8px',
+                        borderRadius: '4px',
+                        backgroundColor: '#E8E5DF',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <div 
+                        style={{
+                          width: '169px',
+                          height: '8px',
+                          borderRadius: '4px',
+                          backgroundColor: '#1E9A80'
+                        }}
+                      ></div>
+                    </div>
+
+                    {/* 5 of 25 used today and +25 tomorrow */}
+                    <div 
+                      style={{
+                        width: '271px',
+                        height: '20px',
+                        justifyContent: 'space-between',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span 
+                        style={{
+                          fontWeight: 400,
+                          fontSize: '12px',
+                          lineHeight: '20px',
+                          letterSpacing: '-0.01em',
+                          color: '#5F5F5D'
+                        }}
+                      >
+                        5 of 25 used today
+                      </span>
+                      <span 
+                        style={{
+                          fontWeight: 400,
+                          fontSize: '12px',
+                          lineHeight: '18px',
+                          letterSpacing: '0%',
+                          color: '#1E9A80'
+                        }}
+                      >
+                        +25 tomorrow
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Win Free Credits */}
-            <button 
-              className="w-full text-left px-3 py-2.5 rounded-xl transition flex items-center space-x-3 text-sm text-gray-700 mb-2"
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            {/* Separator Line */}
+            <div 
+              style={{
+                width: '307px',
+                height: '0px',
+                gap: '8px',
+                paddingRight: '10px',
+                paddingLeft: '10px'
+              }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-              </svg>
-              <span>Win free credits</span>
-            </button>
+              <div 
+                style={{
+                  width: '287px',
+                  height: '1px',
+                  backgroundColor: '#E8E5DF'
+                }}
+              ></div>
+            </div>
 
-            {/* Theme Style */}
-            <button 
-              className="w-full text-left px-3 py-2.5 rounded-xl transition flex items-center space-x-3 text-sm text-gray-700 mb-2"
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            {/* Win Free Credits and Theme Style */}
+            <div 
+              style={{
+                width: '307px',
+                height: '92px',
+                gap: '8px',
+                paddingRight: '4px',
+                paddingLeft: '4px'
+              }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-              </svg>
-              <span>Theme Style</span>
-            </button>
+              <div 
+                style={{
+                  width: '299px',
+                  height: '92px',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                {/* Win Free Credits */}
+                <button 
+                  className="transition flex items-center"
+                  style={{
+                    width: '287px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    padding: '6px',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <div 
+                    style={{
+                      width: '275px',
+                      height: '28px',
+                      gap: '8px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div 
+                      className="flex items-center justify-center"
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        padding: '6px',
+                        gap: '10px',
+                        backgroundColor: '#F3F3EE'
+                      }}
+                    >
+                      <img
+                        src="/assets/gift.svg"
+                        alt="Gift"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                    </div>
+                    <span 
+                      style={{
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        letterSpacing: '-0.01em',
+                        color: '#09090B'
+                      }}
+                    >
+                      Win free credits
+                    </span>
+                  </div>
+                </button>
+
+                {/* Theme Style */}
+                <button 
+                  className="transition flex items-center"
+                  style={{
+                    width: '287px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    padding: '6px',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <div 
+                    style={{
+                      width: '275px',
+                      height: '28px',
+                      gap: '8px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div 
+                      className="flex items-center justify-center"
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        padding: '6px',
+                        gap: '10px',
+                        backgroundColor: '#F3F3EE'
+                      }}
+                    >
+                      <img
+                        src="/assets/theme.svg"
+                        alt="Theme"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                    </div>
+                    <span 
+                      style={{
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        letterSpacing: '-0.01em',
+                        color: '#09090B'
+                      }}
+                    >
+                      Theme Style
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Separator below Theme Style */}
+            <div 
+              style={{
+                width: '307px',
+                height: '0px',
+                gap: '8px',
+                paddingRight: '10px',
+                paddingLeft: '10px'
+              }}
+            >
+              <div 
+                style={{
+                  width: '287px',
+                  height: '1px',
+                  backgroundColor: '#E8E5DF'
+                }}
+              ></div>
+            </div>
 
             {/* Log Out */}
-            <div className="border-t border-gray-200 pt-3 mt-3">
-              <button 
-                onClick={() => {
-                  useAuthStore.getState().logout()
-                  window.location.href = '/auth'
+            <div 
+              style={{
+                width: '307px',
+                height: '48px',
+                gap: '8px',
+                paddingRight: '4px',
+                paddingLeft: '4px'
+              }}
+            >
+              <div 
+                style={{
+                  width: '299px',
+                  height: '48px'
                 }}
-                className="w-full text-left px-3 py-2.5 hover:bg-red-50 rounded-xl transition flex items-center space-x-3 text-sm text-red-600 font-medium"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span>Log out</span>
-              </button>
+                <button 
+                  onClick={() => {
+                    useAuthStore.getState().logout()
+                    window.location.href = '/auth'
+                  }}
+                  className="transition flex items-center"
+                  style={{
+                    width: '287px',
+                    marginTop:"15px",
+                    height: '40px',
+                    borderRadius: '8px',
+                    padding: '6px',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <div 
+                    style={{
+                      width: '275px',
+                      height: '28px',
+                      
+                      gap: '8px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div 
+                      className="flex items-center justify-center"
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        padding: '6px',
+                        gap: '10px',
+                        backgroundColor: '#F3F3EE'
+                      }}
+                    >
+                      <img
+                        src="/assets/logout.svg"
+                        alt="Logout"
+                        style={{ 
+                          width: '16px', 
+                          height: '16px',
+                          filter: 'invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%)'
+                        }}
+                      />
+                    </div>
+                    <span 
+                      style={{
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        letterSpacing: '-0.01em',
+                        color: '#09090B'
+                      }}
+                    >
+                      Log out
+                    </span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </>
