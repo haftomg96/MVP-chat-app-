@@ -90,7 +90,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
-          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-[#1E9A80] rounded-full flex items-center justify-center">
             <svg
               className="w-7 h-7 text-white"
               fill="none"
@@ -170,7 +170,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#1E9A80] hover:bg-[#1E9A80] text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
           </button>
@@ -234,7 +234,7 @@ export default function AuthPage() {
               setIsLogin(!isLogin)
               setError('')
             }}
-            className="text-primary hover:text-primary-dark font-medium transition"
+            className="text-[#1E9A80] hover:text-[#1E9A80] font-medium transition"
           >
             {isLogin
               ? "Don't have an account? Sign up"

@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 interface User {
   id: string
@@ -13,43 +11,81 @@ interface User {
   picture: string | null
 }
 
+interface LastMessage {
+  content: string
+  createdAt: string
+  isRead: boolean
+  senderId: string
+}
+
 export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: () => void }) {
-  const { token, user, logout } = useAuthStore()
+  const { token, user } = useAuthStore()
   const { selectedUserId, setSelectedUser, onlineUsers } = useChatStore()
   const [users, setUsers] = useState<User[]>([])
+  const [lastMessages, setLastMessages] = useState<Record<string, LastMessage>>({})
   const [searchQuery, setSearchQuery] = useState('')
-  const [showMenu, setShowMenu] = useState(false)
   const [showNewMessage, setShowNewMessage] = useState(false)
-  const router = useRouter()
+  const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ userId: string; x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (token) {
       fetchUsers()
+      fetchLastMessages()
     }
   }, [token])
 
+  // Close context menu on click outside
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null)
+    if (contextMenu) {
+      document.addEventListener('click', handleClick)
+      return () => document.removeEventListener('click', handleClick)
+    }
+  }, [contextMenu])
+
+  // Refresh last messages when selected user changes (after sending a message)
+  useEffect(() => {
+    if (token && selectedUserId) {
+      // Small delay to ensure message is saved
+      const timer = setTimeout(() => {
+        fetchLastMessages()
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [selectedUserId, token])
+
+  const fetchLastMessages = async () => {
+    try {
+      console.log('📨 Fetching last messages...')
+      const res = await fetch('/api/messages/last', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      console.log('📨 Last messages response status:', res.status)
+      if (res.ok) {
+        const data = await res.json()
+        console.log('📨 Last messages data:', data)
+        setLastMessages(data)
+      } else {
+        console.error('❌ Failed to fetch last messages:', res.status)
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch last messages:', error)
+    }
+  }
+
   const fetchUsers = async () => {
     try {
-      console.log('🔍 Fetching users with token:', token ? 'Token exists' : 'No token')
       const res = await fetch('/api/users', {
         headers: { Authorization: `Bearer ${token}` },
       })
-      console.log('📡 Response status:', res.status)
       if (res.ok) {
         const data = await res.json()
-        console.log('✅ Fetched users:', data)
         setUsers(data)
-      } else {
-        console.error('❌ Failed to fetch users:', res.status, res.statusText)
       }
     } catch (error) {
       console.error('❌ Failed to fetch users:', error)
     }
-  }
-
-  const handleLogout = () => {
-    logout()
-    router.push('/auth')
   }
 
   const filteredUsers = users.filter((u) =>
@@ -57,26 +93,32 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
     u.email.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const onlineUsersList = filteredUsers.filter((u) => onlineUsers.has(u.id))
-  const offlineUsersList = filteredUsers.filter((u) => !onlineUsers.has(u.id))
-
   const handleUserSelect = (userId: string) => {
     setSelectedUser(userId)
     onMobileUserSelect?.()
   }
 
   return (
-    <div className="w-full md:w-[400px] bg-white flex flex-col md:rounded-3xl md:ml-0 md:mr-3 md:my-3 shadow-sm relative h-full">
+    <div 
+      className="w-full md:w-[400px] bg-white flex flex-col md:rounded-3xl md:ml-0 md:mr-3 md:mb-3 shadow-sm relative h-full"
+      onContextMenu={(e) => {
+        // Only prevent default if not clicking on a user item (let UserItem handle it)
+        const target = e.target as HTMLElement
+        if (!target.closest('[data-user-item]')) {
+          e.preventDefault()
+        }
+      }}
+    >
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">All Message</h2>
+      <div className="px-6 pt-6 pb-4">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-2xl font-bold text-gray-900">All Message</h2>
           <button
             onClick={() => setShowNewMessage(!showNewMessage)}
-            className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-dark transition flex items-center space-x-1.5"
+            className="px-4 py-2 bg-[#1E9A80] text-white rounded-xl text-sm font-medium hover:bg-[#1E9A80] transition flex items-center space-x-2"
           >
             <svg
-              className="w-3.5 h-3.5"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -85,16 +127,14 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M12 4v16m8-8H4"
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
               />
             </svg>
             <span>New Message</span>
           </button>
         </div>
-      </div>
 
-      {/* Search */}
-      <div className="px-6 py-4 border-b border-gray-200">
+        {/* Search */}
         <div className="relative flex items-center space-x-2">
           <div className="relative flex-1">
             <input
@@ -102,10 +142,10 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               placeholder="Search in message"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-white outline-none text-sm text-gray-600 placeholder:text-gray-400"
             />
             <svg
-              className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
+              className="w-5 h-5 text-gray-400 absolute left-3 top-3"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -118,7 +158,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               />
             </svg>
           </div>
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+          <button className="p-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
             <svg
               className="w-5 h-5 text-gray-600"
               fill="none"
@@ -141,12 +181,14 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
         {/* AI Chat Option */}
         <div
           onClick={() => handleUserSelect('ai-assistant')}
-          className={`flex items-center space-x-3 p-4 cursor-pointer hover:bg-gray-50 transition ${
-            selectedUserId === 'ai-assistant' ? 'bg-teal-50' : ''
+          onMouseEnter={() => setHoveredUserId('ai-assistant')}
+          onMouseLeave={() => setHoveredUserId(null)}
+          className={`relative flex items-center space-x-3 px-6 py-4 cursor-pointer transition ${
+            selectedUserId === 'ai-assistant' ? 'bg-gray-50' : 'hover:bg-gray-50'
           }`}
         >
-          <div className="relative">
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+          <div className="relative flex-shrink-0">
+            <div className="w-12 h-12 bg-[#1E9A80] rounded-full flex items-center justify-center">
               <svg
                 className="w-6 h-6 text-white"
                 fill="none"
@@ -161,98 +203,140 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
                 />
               </svg>
             </div>
-            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 truncate">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-base font-semibold text-gray-900 truncate">
                 AI Assistant
               </h3>
-              <span className="text-[11px] text-gray-500">Online</span>
+              {!hoveredUserId && (
+                <span className="text-xs text-gray-400">Online</span>
+              )}
             </div>
-            <p className="text-[13px] text-gray-500 truncate leading-relaxed">
+            <p className="text-sm text-gray-500 truncate">
               Chat with AI for help
             </p>
           </div>
+          {hoveredUserId === 'ai-assistant' && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+              className="absolute right-6 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1E9A80] text-white rounded-lg hover:bg-[#1E9A80] transition flex flex-col items-center justify-center gap-1"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="text-xs font-medium">Archive</span>
+            </button>
+          )}
         </div>
 
-        {/* Online Users */}
-        {onlineUsersList.length > 0 && (
-          <>
-            <div className="px-4 py-2 bg-gray-50">
-              <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">
-                Online ({onlineUsersList.length})
-              </span>
-            </div>
-            {onlineUsersList.map((u) => (
-              <UserItem
-                key={u.id}
-                user={u}
-                isOnline={true}
-                isSelected={selectedUserId === u.id}
-                onClick={() => handleUserSelect(u.id)}
-              />
-            ))}
-          </>
-        )}
-
-        {/* Offline Users */}
-        {offlineUsersList.length > 0 && (
-          <>
-            <div className="px-4 py-2 bg-gray-50">
-              <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">
-                Offline ({offlineUsersList.length})
-              </span>
-            </div>
-            {offlineUsersList.map((u) => (
-              <UserItem
-                key={u.id}
-                user={u}
-                isOnline={false}
-                isSelected={selectedUserId === u.id}
-                onClick={() => handleUserSelect(u.id)}
-              />
-            ))}
-          </>
-        )}
+        {/* Regular Users */}
+        {filteredUsers.map((u) => (
+          <UserItem
+            key={u.id}
+            user={u}
+            currentUserId={user?.id || ''}
+            lastMessage={lastMessages[u.id]}
+            isSelected={selectedUserId === u.id}
+            isHovered={hoveredUserId === u.id}
+            onHover={() => setHoveredUserId(u.id)}
+            onLeave={() => setHoveredUserId(null)}
+            onClick={() => handleUserSelect(u.id)}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setContextMenu({ userId: u.id, x: e.clientX, y: e.clientY })
+            }}
+          />
+        ))}
       </div>
 
-      {/* New Message Modal - Dropdown style */}
+      {/* New Message Modal */}
       {showNewMessage && (
         <>
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-black bg-opacity-20 z-40"
             onClick={() => setShowNewMessage(false)}
           ></div>
           
-          {/* Modal positioned at top of sidebar */}
-          <div className="absolute top-[88px] left-6 right-6 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 max-h-[500px] flex flex-col">
-            {/* New Message Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-900">New Message</h3>
-              <button
-                onClick={() => setShowNewMessage(false)}
-                className="p-1 hover:bg-gray-100 rounded-lg transition"
+          <div 
+            className="absolute bg-white shadow-2xl z-50 flex flex-col"
+            style={{
+              top: '70px',
+              left: '34px',
+              width: '293px',
+              height: '440px',
+              borderRadius: '16px',
+              border: '1px solid #E5E7EB',
+              padding: '12px'
+            }}
+          >
+            <div 
+              className="flex flex-col"
+              style={{
+                width: '249px',
+                height: '416px',
+                gap: '16px'
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="flex items-center justify-between"
+                style={{
+                  width: '249px',
+                  height: '24px',
+                  gap: '10px'
+                }}
               >
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+                <h3 
+                  style={{
+                    fontWeight: 500,
+                    fontSize: '16px',
+                    lineHeight: '24px',
+                    letterSpacing: '-0.011em',
+                    color: '#111625'
+                  }}
+                >
+                  New Message
+                </h3>
+                <button
+                  onClick={() => setShowNewMessage(false)}
+                  className="hover:bg-gray-100 rounded-lg transition"
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    padding: '0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-            {/* Search in New Message */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search name or email"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
-                />
+              {/* Search */}
+              <div 
+                className="relative flex items-center"
+                style={{
+                  width: '249px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  border: '1px solid #F3F3EE',
+                  gap: '8px',
+                  paddingTop: '10px',
+                  paddingRight: '4px',
+                  paddingBottom: '10px',
+                  paddingLeft: '10px'
+                }}
+              >
                 <svg
-                  className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
+                  className="w-4 h-4 text-gray-400 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -264,11 +348,27 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
+                <input
+                  type="text"
+                  placeholder="Search name or email"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent border-0 outline-none text-sm"
+                  style={{
+                    fontSize: '12px',
+                    padding: '0'
+                  }}
+                />
               </div>
-            </div>
 
-            {/* User List for New Message */}
-            <div className="flex-1 overflow-y-auto">
+              {/* Chat Lists */}
+              <div 
+                className="flex-1 overflow-y-auto"
+                style={{
+                  width: '249px',
+                  gap: '12px'
+                }}
+              >
               {filteredUsers.map((u) => (
                 <button
                   key={u.id}
@@ -286,12 +386,9 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
                         className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      <div className="w-10 h-10 bg-[#1E9A80] rounded-full flex items-center justify-center text-white text-sm font-semibold">
                         {u.name?.[0] || u.email[0]}
                       </div>
-                    )}
-                    {onlineUsers.has(u.id) && (
-                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                     )}
                   </div>
                   <div className="flex-1 text-left min-w-0">
@@ -302,9 +399,200 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
                   </div>
                 </button>
               ))}
+              </div>
             </div>
           </div>
         </>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed bg-white shadow-2xl border border-gray-100 z-50"
+          style={{
+            left: `${contextMenu.x}px`,
+            top: `${contextMenu.y}px`,
+            width: '184px',
+            borderRadius: '12px',
+            padding: '4px',
+            gap: '4px',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            style={{
+              height: '32px',
+              borderRadius: '8px',
+              gap: '10px',
+              paddingTop: '6px',
+              paddingRight: '8px',
+              paddingBottom: '6px',
+              paddingLeft: '8px',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              // Mark as unread logic
+              setContextMenu(null)
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Mark as unread
+          </button>
+          
+          <button
+            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            style={{
+              height: '32px',
+              borderRadius: '8px',
+              gap: '10px',
+              paddingTop: '6px',
+              paddingRight: '8px',
+              paddingBottom: '6px',
+              paddingLeft: '8px',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              // Archive logic
+              setContextMenu(null)
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            Archive
+          </button>
+          
+          <button
+            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            style={{
+              height: '32px',
+              borderRadius: '8px',
+              gap: '10px',
+              paddingTop: '6px',
+              paddingRight: '8px',
+              paddingBottom: '6px',
+              paddingLeft: '8px',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              // Mute logic
+              setContextMenu(null)
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+            </svg>
+            Mute
+            <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          
+          <button
+            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            style={{
+              height: '32px',
+              borderRadius: '8px',
+              gap: '10px',
+              paddingTop: '6px',
+              paddingRight: '8px',
+              paddingBottom: '6px',
+              paddingLeft: '8px',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              // Contact info logic
+              setContextMenu(null)
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Contact info
+          </button>
+          
+          <button
+            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            style={{
+              height: '32px',
+              borderRadius: '8px',
+              gap: '10px',
+              paddingTop: '6px',
+              paddingRight: '8px',
+              paddingBottom: '6px',
+              paddingLeft: '8px',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              // Export chat logic
+              setContextMenu(null)
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Export chat
+          </button>
+          
+          <div style={{ borderTop: '1px solid #E5E7EB', margin: '4px 0' }}></div>
+          
+          <button
+            className="w-full text-left transition flex items-center text-sm text-gray-700"
+            style={{
+              height: '32px',
+              borderRadius: '8px',
+              gap: '10px',
+              paddingTop: '6px',
+              paddingRight: '8px',
+              paddingBottom: '6px',
+              paddingLeft: '8px',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              // Clear chat logic
+              setContextMenu(null)
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear chat
+          </button>
+          
+          <button
+            className="w-full text-left transition flex items-center text-sm text-red-600"
+            style={{
+              height: '32px',
+              borderRadius: '8px',
+              gap: '10px',
+              paddingTop: '6px',
+              paddingRight: '8px',
+              paddingBottom: '6px',
+              paddingLeft: '8px',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onClick={() => {
+              // Delete chat logic
+              setContextMenu(null)
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Delete chat
+          </button>
+        </div>
       )}
     </div>
   )
@@ -312,166 +600,149 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
 
 function UserItem({
   user,
-  isOnline,
+  currentUserId,
+  lastMessage,
   isSelected,
+  isHovered,
+  onHover,
+  onLeave,
   onClick,
+  onContextMenu,
 }: {
   user: User
-  isOnline: boolean
+  currentUserId: string
+  lastMessage?: LastMessage
   isSelected: boolean
+  isHovered: boolean
+  onHover: () => void
+  onLeave: () => void
   onClick: () => void
+  onContextMenu: (e: React.MouseEvent) => void
 }) {
-  const [showContextMenu, setShowContextMenu] = useState(false)
-  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
-  const [isHovered, setIsHovered] = useState(false)
+  const isSentByMe = lastMessage?.senderId === currentUserId
+  const hasUnreadMessage = lastMessage && !lastMessage.isRead && !isSentByMe
+  const timeAgo = lastMessage ? getTimeAgo(new Date(lastMessage.createdAt)) : '3 mins ago'
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setContextMenuPosition({ x: e.clientX, y: e.clientY })
-    setShowContextMenu(true)
+  // Debug logging
+  if (lastMessage) {
+    console.log(`👤 User ${user.name}:`, {
+      senderId: lastMessage.senderId,
+      currentUserId,
+      isSentByMe,
+      isRead: lastMessage.isRead,
+      hasUnreadMessage,
+    })
   }
 
-  useEffect(() => {
-    const handleClickOutside = () => setShowContextMenu(false)
-    if (showContextMenu) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [showContextMenu])
-
   return (
-    <>
-      <div
-        onClick={onClick}
-        onContextMenu={handleContextMenu}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`flex items-center space-x-3 p-4 cursor-pointer hover:bg-gray-50 transition relative ${
-          isSelected ? 'bg-teal-50' : ''
-        }`}
-      >
-        {/* Unread Badge - appears on hover on the LEFT */}
-        {isHovered && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-primary text-white px-2 py-1 rounded-md text-xs font-medium z-10">
-            Unread
-          </div>
-        )}
-
-        <div className={`relative ${isHovered ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
-          {user.picture ? (
-            <img
-              src={user.picture}
-              alt={user.name || 'User'}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-              {user.name?.[0] || user.email[0]}
-            </div>
-          )}
-          {isOnline && (
-            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-          )}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900 truncate">
-              {user.name || user.email}
-            </h3>
-            {!isHovered && (
-              <span className="text-[11px] text-gray-500">
-                3 mins ago
-              </span>
-            )}
-          </div>
-          <p className="text-[13px] text-gray-500 truncate leading-relaxed">Last message preview...</p>
-        </div>
-
-        {/* Archive Button - appears on hover on the RIGHT */}
-        {isHovered && (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation()
-              // Archive action
-            }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-primary text-white p-2 rounded-lg hover:bg-primary-dark transition z-10"
-            title="Archive"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {/* Context Menu */}
-      {showContextMenu && (
-        <div
-          className="fixed bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 min-w-[200px]"
-          style={{
-            top: `${contextMenuPosition.y}px`,
-            left: `${contextMenuPosition.x}px`,
-          }}
-        >
-          <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition flex items-center space-x-3 text-[13px] text-gray-700">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <span>Mark as unread</span>
-          </button>
-          
-          <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition flex items-center space-x-3 text-[13px] text-gray-700">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-            <span>Archive</span>
-          </button>
-
-          <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition flex items-center space-x-3 text-[13px] text-gray-700">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-            </svg>
-            <span>Mute</span>
-            <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition flex items-center space-x-3 text-[13px] text-gray-700">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span>Contact info</span>
-          </button>
-
-          <div className="my-1 border-t border-gray-200"></div>
-
-          <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition flex items-center space-x-3 text-[13px] text-gray-700">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            <span>Export chat</span>
-          </button>
-
-          <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition flex items-center space-x-3 text-[13px] text-gray-700">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span>Clear chat</span>
-          </button>
-
-          <div className="my-1 border-t border-gray-200"></div>
-
-          <button className="w-full text-left px-4 py-2.5 hover:bg-red-50 transition flex items-center space-x-3 text-[13px] text-red-600">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <span>Delete chat</span>
-          </button>
+    <div
+      data-user-item
+      onClick={onClick}
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+      onContextMenu={onContextMenu}
+      className={`relative flex items-center space-x-3 px-6 py-4 cursor-pointer transition ${
+        isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'
+      }`}
+    >
+      {/* Unread Badge - Left Side */}
+      {hasUnreadMessage && !isHovered && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#1E9A80] text-white px-3 py-6 rounded-r-xl flex flex-col items-center justify-center gap-1 shadow-md z-10">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+          </svg>
+          <span className="text-xs font-medium">Unread</span>
         </div>
       )}
-    </>
+
+      <div className="relative flex-shrink-0">
+        {user.picture ? (
+            <img
+            src={user.picture}
+            alt={user.name || 'User'}
+            className="w-12 h-12 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-12 h-12 bg-[#1E9A80] rounded-full flex items-center justify-center text-white font-semibold">
+            {user.name?.[0] || user.email[0]} 
+          </div>
+        )}
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-base font-semibold text-gray-900 truncate">
+            {user.name || user.email}
+          </h3>
+          {!isHovered && (
+            <span className="text-xs text-gray-400">{timeAgo}</span>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          <p className={`text-sm truncate flex-1 ${hasUnreadMessage ? 'text-gray-900 font-semibold' : 'text-gray-500'}`}>
+            {lastMessage?.content || 'No messages yet'}
+          </p>
+          {!isHovered && isSentByMe && lastMessage && (
+            <span className="flex-shrink-0">
+              {lastMessage.isRead ? (
+                // Double checkmark (read) - colored
+                <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    d="M14.707 5.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L8 10.586l5.293-5.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                    opacity="0.6"
+                  />
+                </svg>
+              ) : (
+                // Single checkmark (sent) - gray
+                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Archive Button - Right Side (shows on hover) */}
+      {isHovered && (
+        <button 
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+          className="absolute right-6 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1E9A80] text-white rounded-lg hover:bg-[#1E9A80] transition flex flex-col items-center justify-center gap-1 shadow-md z-10"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+            <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
+          </svg>
+          <span className="text-xs font-medium">Archive</span>
+        </button>
+      )}
+    </div>
   )
+}
+
+function getTimeAgo(date: Date): string {
+  const now = new Date()
+  const diffInMs = now.getTime() - date.getTime()
+  const diffInMins = Math.floor(diffInMs / 60000)
+  const diffInHours = Math.floor(diffInMs / 3600000)
+  const diffInDays = Math.floor(diffInMs / 86400000)
+
+  if (diffInMins < 1) return 'Just now'
+  if (diffInMins < 60) return `${diffInMins} mins ago`
+  if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
+  return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
 }

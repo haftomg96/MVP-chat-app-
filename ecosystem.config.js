@@ -17,7 +17,8 @@ module.exports = {
         PORT: 9080,
       },
       env_staging: {
-        NODE_ENV: 'staging',
+        NODE_ENV: 'production',
+        APP_ENV: 'staging',
         PORT: 9080,
       },
       error_file: './logs/err.log',

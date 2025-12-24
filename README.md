@@ -12,19 +12,21 @@ A modern, real-time chat application built with Next.js, WebSocket, Prisma, and 
 ✅ **Real-time Messaging**
 - WebSocket-powered instant messaging
 - Online/offline user status
-- Message read receipts
-- Typing indicators
+- WhatsApp-style message read receipts (single tick = sent, double tick = read)
+- Real-time typing indicators
 
 ✅ **User Management**
 - User list with online/offline status
 - User profiles with avatars
 - Search functionality
+- Archive button on hover
 
 ✅ **Chat Features**
 - One-on-one messaging
 - Message history stored in database
 - Persistent chat sessions
 - Contact information panel
+- Mobile responsive design
 
 ✅ **BONUS: AI Chat**
 - Chat with AI assistant
@@ -45,9 +47,9 @@ A modern, real-time chat application built with Next.js, WebSocket, Prisma, and 
 ### Prerequisites
 
 - Node.js 18+ installed
-- PostgreSQL database
-- Google OAuth credentials (optional)
-- OpenAI API key (optional, for AI chat)
+- PostgreSQL database running
+- Google OAuth credentials (optional, for Google login)
+- OpenAI API key (optional, for AI chat feature)
 
 ### Installation
 
@@ -59,7 +61,7 @@ npm install
 
 2. **Set up environment variables**
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (see `.env.example` for reference):
 
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/chatapp?schema=public"
@@ -71,6 +73,8 @@ JWT_SECRET="your-jwt-secret-here"
 OPENAI_API_KEY="your-openai-api-key" # Optional
 ```
 
+**Note**: Replace the database credentials with your actual PostgreSQL connection details.
+
 3. **Set up the database**
 
 ```bash
@@ -78,13 +82,51 @@ npx prisma migrate dev --name init
 npx prisma generate
 ```
 
-4. **Run the development server**
+4. **Seed the database (optional)**
+
+```bash
+node scripts/seed.js
+```
+
+This will create sample users for testing.
+
+5. **Run the development server**
 
 ```bash
 npm run dev
 ```
 
 The app will be available at [http://localhost:3000](http://localhost:3000)
+
+### Production Deployment
+
+For production deployment:
+
+```bash
+# Build the application
+npm run build
+
+# Start the production server
+npm start
+```
+
+**Note**: Make sure to set `NODE_ENV=production` in your production environment.
+
+### Quick Fix Scripts
+
+If you encounter deployment issues, use these helper scripts:
+
+**Quick Fix (rebuilds and restarts everything)**:
+```bash
+./QUICK_FIX.sh
+```
+
+**Database Connection Issues**:
+```bash
+./DATABASE_FIX.sh
+```
+
+See `DEPLOYMENT.md` for detailed troubleshooting guide.
 
 ## Project Structure
 
@@ -124,7 +166,7 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
 1. **Authentication Page**
    - Conversion-focused design
    - Google OAuth integration
-   - JWT-based email/password auth
+   - JWT-based email/password authentication
    - Smooth transitions and error handling
 
 2. **User List**
@@ -132,12 +174,14 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
    - Online/offline status indicators
    - Real-time status updates via WebSocket
    - Search functionality
+   - Archive button on hover (Figma design)
 
 3. **Chat Sessions**
    - Click user to start chat
    - Real-time messaging
    - Message history
-   - Read receipts
+   - WhatsApp-style read receipts (✓ = sent, ✓✓ = read)
+   - Typing indicators
 
 4. **User Information**
    - Display name and picture
@@ -160,13 +204,15 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
    - Same interface as regular chat
 
 2. **Additional Features**
-   - Typing indicators
-   - Message timestamps
-   - User search
-   - Responsive design
+   - Real-time typing indicators
+   - Message timestamps with "time ago" format
+   - User search functionality
+   - Fully mobile responsive design (without affecting desktop layout)
    - Contact info panel with tabs
-   - Archive/mute options
+   - Archive button on hover
    - New message modal
+   - Last message preview in sidebar
+   - Custom primary color (#1E9A80)
 
 ## API Endpoints
 
@@ -218,11 +264,13 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
 ## Design Highlights
 
 - Clean, modern UI matching the provided Figma design
-- Teal/cyan color scheme (#2DD4BF primary color)
+- Custom teal color scheme (#1E9A80 primary color)
 - Smooth transitions and hover effects
-- Responsive layout
+- Fully responsive layout (mobile and desktop)
 - Intuitive user experience
-- Conversion-focused auth page
+- Conversion-focused authentication page
+- WhatsApp-style read receipts
+- Archive button with icon and text on hover
 
 ## Future Enhancements
 
