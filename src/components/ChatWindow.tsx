@@ -47,6 +47,15 @@ export default function ChatWindow({
         picture: null,
       })
     }
+    
+    // Reset typing indicator when switching conversations
+    setIsTyping(false)
+    
+    // Clear any pending typing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout)
+      setTypingTimeout(null)
+    }
   }, [selectedUserId])
 
   const markMessagesAsRead = async () => {
@@ -154,16 +163,27 @@ export default function ChatWindow({
       // Set new timeout to stop typing indicator
       const timeout = setTimeout(() => {
         console.log('⌨️ Stopping typing indicator')
-        socket.emit('typing', {
-          senderId: user?.id,
-          receiverId: selectedUserId,
-          isTyping: false,
-        })
+        if (socket && selectedUserId) {
+          socket.emit('typing', {
+            senderId: user?.id,
+            receiverId: selectedUserId,
+            isTyping: false,
+          })
+        }
       }, 2000)
 
       setTypingTimeout(timeout)
     }
   }
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout)
+      }
+    }
+  }, [typingTimeout])
 
   const fetchMessages = async () => {
     if (!selectedUserId || selectedUserId === 'ai-assistant') return
@@ -207,6 +227,19 @@ export default function ChatWindow({
     const messageContent = newMessage.trim()
     setNewMessage('')
     setLoading(true)
+
+    // Clear typing timeout and send stop typing event immediately
+    if (typingTimeout) {
+      clearTimeout(typingTimeout)
+      setTypingTimeout(null)
+    }
+    if (socket && selectedUserId && selectedUserId !== 'ai-assistant') {
+      socket.emit('typing', {
+        senderId: user?.id,
+        receiverId: selectedUserId,
+        isTyping: false,
+      })
+    }
 
     try {
       if (selectedUserId === 'ai-assistant') {
