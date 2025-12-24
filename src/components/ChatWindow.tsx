@@ -634,7 +634,6 @@ export default function ChatWindow({
                     <div
                       className={`mt-1 flex items-center gap-1.5`}
                       style={{ 
-                        fontFamily: 'Inter',
                         fontSize: '12px',
                         lineHeight: '16px',
                         color: '#8B8B8B',
@@ -729,8 +728,6 @@ export default function ChatWindow({
           height: '48px',
           gap: '12px',
           paddingTop: '8px',
-          paddingLeft: '12px',
-          paddingRight: '12px',
           borderBottom: '1px solid transparent'
         }}
       >
