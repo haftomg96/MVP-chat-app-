@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken')
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
-const port = 3000
+const port = 9080
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
@@ -88,6 +88,20 @@ app.prepare().then(() => {
         console.log('✅ Typing event sent to receiver')
       } else {
         console.log('⚠️ Receiver is offline, typing event not sent')
+      }
+    })
+
+    socket.on('message-read', (data) => {
+      console.log('✅ Message read event:', data.messageId, 'by', data.receiverId)
+      const senderSocketId = onlineUsers.get(data.senderId)
+      if (senderSocketId) {
+        io.to(senderSocketId).emit('message-read', {
+          messageId: data.messageId,
+          receiverId: data.receiverId,
+        })
+        console.log('✅ Read receipt sent to sender')
+      } else {
+        console.log('⚠️ Sender is offline, read receipt not sent')
       }
     })
 

@@ -37,6 +37,7 @@ export default function ChatWindow({
     if (selectedUserId && selectedUserId !== 'ai-assistant') {
       fetchMessages()
       fetchUserDetails()
+      markMessagesAsRead()
     } else if (selectedUserId === 'ai-assistant') {
       setMessages([])
       setSelectedUser({
@@ -47,6 +48,23 @@ export default function ChatWindow({
       })
     }
   }, [selectedUserId])
+
+  const markMessagesAsRead = async () => {
+    if (!selectedUserId || selectedUserId === 'ai-assistant') return
+    
+    try {
+      await fetch('/api/messages/mark-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: selectedUserId }),
+      })
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error)
+    }
+  }
 
   useEffect(() => {
     scrollToBottom()
@@ -70,6 +88,17 @@ export default function ChatWindow({
       ) {
         console.log('✅ Message is for current conversation, adding to chat')
         addMessage(message)
+        
+        // If we received a message (not sent by us), mark it as read and notify sender
+        if (message.senderId === selectedUserId && socket) {
+          markMessagesAsRead()
+          // Emit read receipt to sender
+          socket.emit('message-read', {
+            messageId: message.id,
+            senderId: message.senderId,
+            receiverId: user?.id
+          })
+        }
       } else {
         console.log('⚠️ Message is for different conversation, ignoring')
       }
@@ -83,13 +112,25 @@ export default function ChatWindow({
       }
     }
 
+    const handleMessageRead = (data: { messageId: string; receiverId: string }) => {
+      console.log('✅ Message read receipt received:', data)
+      // Update the message status to read in the UI
+      setMessages(
+        messages.map((msg) =>
+          msg.id === data.messageId ? { ...msg, isRead: true } : msg
+        )
+      )
+    }
+
     socket.on('receive-message', handleReceiveMessage)
     socket.on('user-typing', handleUserTyping)
+    socket.on('message-read', handleMessageRead)
 
     return () => {
       console.log('🧹 Cleaning up socket listeners')
       socket.off('receive-message', handleReceiveMessage)
       socket.off('user-typing', handleUserTyping)
+      socket.off('message-read', handleMessageRead)
     }
   }, [socket, selectedUserId, user?.id, addMessage])
 
@@ -241,9 +282,59 @@ export default function ChatWindow({
     }
   }
 
+  // Helper function to check if message is from today
+  const isToday = (date: Date) => {
+    const today = new Date()
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    )
+  }
+
+  // Helper function to format date for separator
+  const formatDateSeparator = (date: Date) => {
+    if (isToday(date)) return 'Today'
+    
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    if (
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear()
+    ) {
+      return 'Yesterday'
+    }
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  // Group messages by date
+  const groupMessagesByDate = (messages: Message[]) => {
+    const groups: { date: string; messages: Message[] }[] = []
+    let currentDate = ''
+    
+    messages.forEach((message) => {
+      const messageDate = new Date(message.createdAt)
+      const dateStr = messageDate.toDateString()
+      
+      if (dateStr !== currentDate) {
+        currentDate = dateStr
+        groups.push({
+          date: formatDateSeparator(messageDate),
+          messages: [message],
+        })
+      } else {
+        groups[groups.length - 1].messages.push(message)
+      }
+    })
+    
+    return groups
+  }
+
   if (!selectedUserId) {
     return (
-      <div className="flex-1 bg-white p-4 flex items-center justify-center bg-gray-50">
+      <div className="flex-1 bg-white rounded-2xl p-4 flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
@@ -275,10 +366,21 @@ export default function ChatWindow({
     selectedUserId === 'ai-assistant' || onlineUsers.has(selectedUserId)
 
   return (
-    <div className="flex-1 flex flex-col bg-white md:rounded-2xl md:p-2 shadow-sm overflow-hidden h-full">
+    <div className="flex-1 flex flex-col bg-white rounded-2xl md:p-2 shadow-sm overflow-hidden h-full">
       {/* Chat Header */}
-      <div className="flex items-center justify-between h-[60px] pt-1 px-3 pb-4 gap-3 border-b border-gray-200 bg-white">
-        <div className="flex items-center space-x-3">
+      <div 
+        className="flex items-center justify-between bg-white"
+        style={{
+          height: '60px',
+          gap: '12px',
+          paddingTop: '4px',
+          paddingRight: '12px',
+          paddingBottom: '16px',
+          paddingLeft: '12px',
+          borderBottom: '1px solid transparent'
+        }}
+      >
+        <div className="flex items-center" style={{ gap: '12px' }}>
           {/* Mobile Back Button */}
           {onMobileBack && (
             <button
@@ -306,10 +408,23 @@ export default function ChatWindow({
               <img
                 src={selectedUser.picture}
                 alt={selectedUser.name || 'User'}
-                className="w-12 h-12 rounded-full object-cover"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '1000px',
+                  objectFit: 'cover'
+                }}
               />
             ) : (
-              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
+              <div 
+                className="bg-[#1E9A80] flex items-center justify-center text-white font-semibold"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '1000px',
+                  fontSize: '14px'
+                }}
+              >
                 {selectedUser?.name?.[0] || 'A'}
               </div>
             )}
@@ -317,18 +432,55 @@ export default function ChatWindow({
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
             )}
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">
+          <div 
+            className="flex flex-col justify-center"
+            style={{
+              height: '40px',
+              gap: '4px'
+            }}
+          >
+            <h2 
+              style={{
+                fontWeight: 500,
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '-0.006em',
+                color: '#111625'
+              }}
+            >
               {selectedUser?.name || 'User'}
             </h2>
-            <p className="text-xs text-green-500">
+            <p 
+              style={{
+                fontWeight: 500,
+                fontSize: '12px',
+                lineHeight: '16px',
+                letterSpacing: '0px',
+                color: '#38C793'
+              }}
+            >
               {isOnline ? 'Online' : 'Offline'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-1 md:space-x-2">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition hidden md:block">
+        <div 
+          className="flex items-center"
+          style={{
+            height: '32px',
+            gap: '12px'
+          }}
+        >
+          <button 
+            className="hidden md:flex items-center justify-center"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              border: '1px solid #E8E5DF',
+              gap: '4px'
+            }}
+          >
             <svg
               className="w-5 h-5 text-gray-600"
               fill="none"
@@ -343,7 +495,16 @@ export default function ChatWindow({
               />
             </svg>
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition hidden md:block">
+          <button 
+            className="hidden md:flex items-center justify-center"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              border: '1px solid #E8E5DF',
+              gap: '4px'
+            }}
+          >
             <svg
               className="w-5 h-5 text-gray-600"
               fill="none"
@@ -358,7 +519,16 @@ export default function ChatWindow({
               />
             </svg>
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition hidden md:block">
+          <button 
+            className="hidden md:flex items-center justify-center"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              border: '1px solid #E8E5DF',
+              gap: '4px'
+            }}
+          >
             <svg
               className="w-5 h-5 text-gray-600"
               fill="none"
@@ -375,7 +545,14 @@ export default function ChatWindow({
           </button>
           <button
             onClick={onShowContactInfo}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="flex items-center justify-center"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              border: '1px solid #E8E5DF',
+              gap: '4px'
+            }}
           >
             <svg
               className="w-5 h-5 text-gray-600"
@@ -395,55 +572,128 @@ export default function ChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ backgroundColor: '#F3F3EE' }}>
-        {messages.map((message) => {
-          const isSent = message.senderId === user?.id
-          return (
-            <div
-              key={message.id}
-              className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-md px-3.5 py-2.5 rounded-2xl ${
-                  isSent
-                    ? 'bg-primary text-white rounded-br-none'
-                    : 'bg-white text-gray-900 rounded-bl-none shadow-sm'
-                }`}
-              >
-                <p className="text-[13px] leading-relaxed">{message.content}</p>
-                <p
-                  className={`text-[10px] mt-1 ${
-                    isSent ? 'text-teal-100' : 'text-gray-500'
-                  }`}
-                >
-                  {new Date(message.createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                  {isSent && message.isRead && (
-                    <svg
-                      className="w-4 h-4 inline ml-1"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                </p>
+      <div 
+        className="flex-1 overflow-y-auto" 
+        style={{ 
+          backgroundColor: '#F3F3EE',
+          borderRadius: '16px',
+          padding: '12px',
+          gap: '12px'
+        }}
+      >
+        {groupMessagesByDate(messages).map((group, groupIndex) => (
+          <div key={groupIndex}>
+            {/* Date Separator */}
+            <div className="flex justify-center my-4">
+              <div className="px-3 py-1 bg-white/80 backdrop-blur-sm rounded-full text-xs text-gray-600 font-medium shadow-sm">
+                {group.date}
               </div>
             </div>
-          )
-        })}
+
+            {/* Messages for this date */}
+            {group.messages.map((message, messageIndex) => {
+              const isSent = message.senderId === user?.id
+              const showTime = messageIndex === group.messages.length - 1 || 
+                (messageIndex < group.messages.length - 1 && 
+                 new Date(group.messages[messageIndex + 1].createdAt).getTime() - new Date(message.createdAt).getTime() > 300000)
+              
+              return (
+                <div
+                  key={message.id}
+                  className={`flex flex-col ${isSent ? 'items-end' : 'items-start'} mb-2`}
+                >
+                  <div
+                    className={`max-w-[70%] ${
+                      isSent
+                        ? 'text-white'
+                        : 'bg-white text-[#111625] shadow-sm'
+                    }`}
+                    style={{
+                      padding: '12px',
+                      borderTopLeftRadius: '12px',
+                      borderTopRightRadius: '12px',
+                      borderBottomRightRadius: isSent ? '4px' : '12px',
+                      borderBottomLeftRadius: isSent ? '12px' : '4px',
+                      backgroundColor: isSent ? '#1E9A80' : undefined,
+                    }}
+                  >
+                    <p 
+                      className="whitespace-pre-wrap break-words"
+                      style={{
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        fontWeight: 400,
+                        color: isSent ? '#FFFFFF' : '#111625',
+                        letterSpacing: '0px'
+                      }}
+                    >
+                      {message.content}
+                    </p>
+                  </div>
+                  {showTime && (
+                    <div
+                      className={`mt-1 flex items-center gap-1.5`}
+                      style={{ 
+                        fontFamily: 'Inter',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        color: '#8B8B8B',
+                        fontWeight: 400
+                      }}
+                    >
+                      {isSent && (
+                        <span className="inline-flex items-center">
+                          {message.isRead ? (
+                            // Double checkmark (read) - #1E9A80
+                            <svg
+                              width="14"
+                              height="10"
+                              viewBox="0 0 16 15"
+                              fill="none"
+                              style={{ color: '#1E9A80' }}
+                            >
+                              <path
+                                d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"
+                                fill="currentColor"
+                              />
+                            </svg>
+                          ) : (
+                            // Single checkmark (sent) - #8B8B8B
+                            <svg
+                              width="12"
+                              height="10"
+                              viewBox="0 0 12 11"
+                              fill="none"
+                              style={{ color: '#8B8B8B' }}
+                            >
+                              <path
+                                d="M11.01 2.316l-.478-.372a.365.365 0 0 0-.51.063L4.566 8.879a.32.32 0 0 1-.484.033L1.891 6.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"
+                                fill="currentColor"
+                              />
+                            </svg>
+                          )}
+                        </span>
+                      )}
+                      <span>
+                        {new Date(message.createdAt).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ))}
         
         {/* Typing Indicator (for regular users) */}
         {isTyping && selectedUserId !== 'ai-assistant' && (
           <div className="flex justify-start">
-            <div className="bg-white text-gray-800 rounded-2xl rounded-bl-none shadow-sm px-4 py-3">
-              <div className="flex space-x-2">
+            <div className="bg-white text-gray-800 rounded-lg rounded-bl-none shadow-sm px-4 py-3">
+              <div className="flex space-x-1.5">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
@@ -455,12 +705,12 @@ export default function ChatWindow({
         {/* AI Loading Indicator */}
         {aiLoading && selectedUserId === 'ai-assistant' && (
           <div className="flex justify-start">
-            <div className="bg-white text-gray-800 rounded-2xl rounded-bl-none shadow-sm px-4 py-3">
+            <div className="bg-white text-gray-800 rounded-lg rounded-bl-none shadow-sm px-4 py-3">
               <div className="flex items-center space-x-3">
                 <div className="flex space-x-1.5">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="w-2 h-2 bg-[#1E9A80] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-[#1E9A80] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-[#1E9A80] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
                 <span className="text-xs text-gray-500">AI is thinking...</span>
               </div>
@@ -474,102 +724,162 @@ export default function ChatWindow({
       {/* Input */}
       <form
         onSubmit={handleSendMessage}
-        className="p-3 md:p-4 border-t border-gray-200 bg-white"
+        className="bg-white"
+        style={{
+          height: '48px',
+          gap: '12px',
+          paddingTop: '8px',
+          paddingLeft: '12px',
+          paddingRight: '12px',
+          borderBottom: '1px solid transparent'
+        }}
       >
-        <div className="flex items-center space-x-2 md:space-x-3">
+        <div 
+          className="flex items-center"
+          style={{
+            height: '40px',
+            borderRadius: '100px',
+            border: '1px solid #E8E5DF',
+            gap: '4px',
+            paddingTop: '12px',
+            paddingRight: '4px',
+            paddingBottom: '12px',
+            paddingLeft: '16px'
+          }}
+        >
           <input
             type="text"
             value={newMessage}
             onChange={handleInputChange}
             placeholder="Type any message..."
-            className="flex-1 px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-[13px]"
+            className="flex-1 outline-none bg-transparent text-sm"
+            style={{
+              fontSize: '14px',
+              color: '#111625'
+            }}
             disabled={loading}
           />
           
-          {/* Microphone Icon - Hidden on small mobile */}
-          <button
-            type="button"
-            className="p-2 hover:bg-gray-100 rounded-lg transition hidden sm:block"
-            title="Voice record"
+          {/* Icons Container */}
+          <div 
+            className="flex items-center flex-shrink-0"
+            style={{
+              height: '32px',
+              gap: '8px'
+            }}
           >
-            <svg
-              className="w-5 h-5 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Microphone Icon */}
+            <button
+              type="button"
+              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '100px',
+                padding: '0'
+              }}
+              title="Voice record"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
                 strokeWidth={2}
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-              />
-            </svg>
-          </button>
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            </button>
 
-          {/* Emoji Icon - Hidden on small mobile */}
-          <button
-            type="button"
-            className="p-2 hover:bg-gray-100 rounded-lg transition hidden sm:block"
-            title="Emoji"
-          >
-            <svg
-              className="w-5 h-5 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Emoji Icon */}
+            <button
+              type="button"
+              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '100px',
+                padding: '0'
+              }}
+              title="Emoji"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
                 strokeWidth={2}
-                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </button>
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
 
-          {/* Attachment Icon - Hidden on small mobile */}
-          <button
-            type="button"
-            className="p-2 hover:bg-gray-100 rounded-lg transition hidden md:block"
-            title="Attach file"
-          >
-            <svg
-              className="w-5 h-5 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Attachment Icon */}
+            <button
+              type="button"
+              className="hidden md:flex items-center justify-center flex-shrink-0"
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '100px',
+                padding: '0'
+              }}
+              title="Attach file"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
                 strokeWidth={2}
-                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-              />
-            </svg>
-          </button>
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                />
+              </svg>
+            </button>
 
-          {/* Send Button */}
-          <button
-            type="submit"
-            disabled={!newMessage.trim() || loading}
-            className="p-2 md:p-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Send message"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Send Button */}
+            <button
+              type="submit"
+              disabled={!newMessage.trim() || loading}
+              className="flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '100px',
+                backgroundColor: '#1E9A80',
+                padding: '0',
+                gap: '10px'
+              }}
+              title="Send message"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
                 strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          </button>
+                style={{ transform: 'rotate(45deg)' }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </form>
     </div>
