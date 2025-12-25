@@ -40,6 +40,11 @@ model Message {
   senderId   String
   receiverId String
   isRead     Boolean  @default(false)
+  type       String   @default("text")
+  metadata   Json?
+  deletedBy  String[] @default([])
+  clearedBy  String[] @default([])
+  reactions  Json?    @default("{}")
   createdAt  DateTime @default(now())
   
   sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)

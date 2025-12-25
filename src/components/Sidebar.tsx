@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
+import { useSocket } from '@/hooks/useSocket'
+import SkeletonLoader from '@/components/SkeletonLoader'
 
 interface User {
   id: string
@@ -16,44 +18,173 @@ interface LastMessage {
   createdAt: string
   isRead: boolean
   senderId: string
+  type?: string
+  metadata?: any
 }
 
-export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: () => void }) {
+export default function Sidebar({ 
+  onMobileUserSelect,
+  onShowContactInfo 
+}: { 
+  onMobileUserSelect?: () => void
+  onShowContactInfo?: () => void
+}) {
   const { token, user } = useAuthStore()
-  const { selectedUserId, setSelectedUser, onlineUsers } = useChatStore()
+  const { selectedUserId, setSelectedUser, onlineUsers, setMessages } = useChatStore()
   const [users, setUsers] = useState<User[]>([])
   const [lastMessages, setLastMessages] = useState<Record<string, LastMessage>>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [showNewMessage, setShowNewMessage] = useState(false)
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ userId: string; x: number; y: number } | null>(null)
+  const [adjustedMenuPosition, setAdjustedMenuPosition] = useState<{ x: number; y: number } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const socket = useSocket()
+
+  const handleChatAction = async (action: string, targetUserId: string) => {
+    try {
+      const res = await fetch('/api/chat-actions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action, targetUserId }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        console.log(`✅ ${action} successful:`, data.message)
+        
+        // Refresh data based on action
+        if (action === 'clear' || action === 'delete') {
+          // Clear messages from UI
+          if (selectedUserId === targetUserId) {
+            setMessages([])
+          }
+          // Refresh last messages
+          fetchLastMessages()
+        } else if (action === 'mark-unread') {
+          // Refresh last messages to show unread state
+          fetchLastMessages()
+        }
+      }
+    } catch (error) {
+      console.error(`❌ ${action} failed:`, error)
+    }
+  }
+
+  const handleExportChat = async (targetUserId: string) => {
+    try {
+      const res = await fetch(`/api/chat-actions?targetUserId=${targetUserId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        // Create and download JSON file
+        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `chat-export-${targetUserId}-${new Date().toISOString()}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        console.log('✅ Chat exported successfully')
+      }
+    } catch (error) {
+      console.error('❌ Export failed:', error)
+    }
+  }
 
   useEffect(() => {
     if (token) {
-      fetchUsers()
-      fetchLastMessages()
+      setLoading(true)
+      Promise.all([fetchUsers(), fetchLastMessages()]).finally(() => {
+        setLoading(false)
+      })
     }
   }, [token])
 
+  // Listen for new messages via socket and update last messages
+  useEffect(() => {
+    if (!socket) return
+
+    const handleReceiveMessage = (message: any) => {
+      console.log('📨 Sidebar received message via socket:', message)
+      
+      // Determine which user this message is with
+      const otherUserId = message.senderId === user?.id ? message.receiverId : message.senderId
+      
+      // Update last message for this user
+      setLastMessages((prev) => ({
+        ...prev,
+        [otherUserId]: {
+          content: message.content,
+          createdAt: message.createdAt,
+          isRead: message.isRead,
+          senderId: message.senderId,
+          type: message.type,
+          metadata: message.metadata,
+        },
+      }))
+    }
+
+    socket.on('receive-message', handleReceiveMessage)
+
+    return () => {
+      socket.off('receive-message', handleReceiveMessage)
+    }
+  }, [socket, user?.id])
+
   // Close context menu on click outside
   useEffect(() => {
-    const handleClick = () => setContextMenu(null)
+    const handleClick = () => {
+      setContextMenu(null)
+      setAdjustedMenuPosition(null)
+    }
     if (contextMenu) {
       document.addEventListener('click', handleClick)
       return () => document.removeEventListener('click', handleClick)
     }
   }, [contextMenu])
 
-  // Refresh last messages when selected user changes (after sending a message)
+  // Calculate adjusted position for context menu
   useEffect(() => {
-    if (token && selectedUserId) {
-      // Small delay to ensure message is saved
-      const timer = setTimeout(() => {
-        fetchLastMessages()
-      }, 500)
-      return () => clearTimeout(timer)
+    if (contextMenu) {
+      const menuWidth = 200
+      const menuHeight = 264
+      
+      let x = contextMenu.x
+      let y = contextMenu.y
+      
+      // Check if menu goes off-screen on the right
+      if (x + menuWidth > window.innerWidth) {
+        x = window.innerWidth - menuWidth - 10
+      }
+      
+      // Check if menu goes off-screen on the bottom
+      if (y + menuHeight > window.innerHeight) {
+        y = window.innerHeight - menuHeight - 10
+      }
+      
+      // Ensure it doesn't go off-screen on the left
+      if (x < 10) {
+        x = 10
+      }
+      
+      // Ensure it doesn't go off-screen on the top
+      if (y < 10) {
+        y = 10
+      }
+      
+      setAdjustedMenuPosition({ x, y })
     }
-  }, [selectedUserId, token])
+  }, [contextMenu])
 
   const fetchLastMessages = async () => {
     try {
@@ -98,9 +229,13 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
     onMobileUserSelect?.()
   }
 
+  if (loading) {
+    return <SkeletonLoader type="sidebar" />
+  }
+
   return (
     <div 
-      className="w-full md:w-[400px] bg-white flex flex-col md:rounded-3xl md:ml-0 md:mr-3 md:mb-3 shadow-sm relative h-full"
+      className="w-full md:w-[400px] max-w-full bg-white flex flex-col md:rounded-3xl md:ml-0 md:mr-3 md:mb-3 shadow-sm relative h-full overflow-x-hidden"
       onContextMenu={(e) => {
         // Only prevent default if not clicking on a user item (let UserItem handle it)
         const target = e.target as HTMLElement
@@ -110,19 +245,20 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
       }}
     >
       {/* Header */}
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-4 md:px-6 pt-4 md:pt-6 pb-4">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-2xl font-bold text-gray-900">All Message</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">All Message</h2>
           <button
             onClick={() => setShowNewMessage(!showNewMessage)}
-            className="px-4 py-2 bg-[#1E9A80] text-white rounded-xl text-sm font-medium hover:bg-[#1E9A80] transition flex items-center space-x-2"
+            className="px-3 md:px-4 py-2 bg-[#1E9A80] text-white rounded-xl text-sm font-medium hover:bg-[#1E9A80] transition flex items-center space-x-2"
           >
             <img
               src="/assets/pencil-plus.svg"
               alt="New Message"
-              style={{ width: '18px', height: '18px' }}
+              className="w-4 h-4 md:w-[18px] md:h-[18px]"
             />
-            <span>New Message</span>
+            <span className="hidden sm:inline">New Message</span>
+            <span className="sm:hidden">New</span>
           </button>
         </div>
 
@@ -175,29 +311,24 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
           onClick={() => handleUserSelect('ai-assistant')}
           onMouseEnter={() => setHoveredUserId('ai-assistant')}
           onMouseLeave={() => setHoveredUserId(null)}
-          className="relative cursor-pointer transition"
+          className="relative cursor-pointer transition px-4 md:px-6"
           style={{
             height: '80px',
             display: 'flex',
             alignItems: 'center',
-            paddingLeft: '24px',
-            paddingRight: '24px',
             gap: '12px'
           }}
         >
           {/* Avatar, Name, and Message Container */}
           <div 
-            className="flex items-center flex-1"
+            className="flex items-center flex-1 min-w-0 overflow-hidden"
             style={{
               height: '64px',
               borderRadius: '12px',
               padding: '12px',
               gap: '12px',
               backgroundColor: selectedUserId === 'ai-assistant' ? '#F3F3EE' : (hoveredUserId === 'ai-assistant' ? '#F8F8F5' : 'transparent'),
-              transition: 'background-color 0.2s ease',
-              minWidth: 0,
-              maxWidth: '100%',
-              overflow: 'hidden'
+              transition: 'background-color 0.2s ease'
             }}
           >
             {/* Avatar */}
@@ -231,9 +362,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             <div 
               className="flex flex-col flex-1 min-w-0"
               style={{
-                gap: '4px',
-                overflow: 'hidden',
-                maxWidth: '100%'
+                gap: '4px'
               }}
             >
               {/* Name and Timestamp Row */}
@@ -272,21 +401,21 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
               
               {/* Message Row */}
               <div 
-                className="flex items-center min-w-0"
+                className="flex items-center min-w-0 w-full"
                 style={{
                   gap: '8px',
                   overflow: 'hidden'
                 }}
               >
                 <p 
+                  className="truncate"
                   style={{
                     fontSize: '14px',
                     lineHeight: '20px',
                     letterSpacing: '0px',
                     color: '#A1A1AA',
                     fontWeight: 400,
-                    flex: 1,
-                    minWidth: 0,
+                    maxWidth: '140px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
@@ -345,6 +474,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             lastMessage={lastMessages[u.id]}
             isSelected={selectedUserId === u.id}
             isHovered={hoveredUserId === u.id}
+            isOnline={onlineUsers.has(u.id)}
             onHover={() => setHoveredUserId(u.id)}
             onLeave={() => setHoveredUserId(null)}
             onClick={() => handleUserSelect(u.id)}
@@ -509,12 +639,12 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
       )}
 
       {/* Context Menu */}
-      {contextMenu && (
+      {contextMenu && adjustedMenuPosition && (
         <div
           className="fixed bg-white shadow-2xl z-50"
           style={{
-            left: `${contextMenu.x}px`,
-            top: `${contextMenu.y}px`,
+            left: `${adjustedMenuPosition.x}px`,
+            top: `${adjustedMenuPosition.y}px`,
             width: '200px',
             height: '264px',
             borderRadius: '16px',
@@ -543,7 +673,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             onClick={() => {
-              // Mark as unread logic
+              handleChatAction('mark-unread', contextMenu.userId)
               setContextMenu(null)
             }}
           >
@@ -573,7 +703,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             onClick={() => {
-              // Archive logic
+              handleChatAction('archive', contextMenu.userId)
               setContextMenu(null)
             }}
           >
@@ -603,7 +733,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             onClick={() => {
-              // Mute logic
+              handleChatAction('mute', contextMenu.userId)
               setContextMenu(null)
             }}
           >
@@ -636,7 +766,8 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             onClick={() => {
-              // Contact info logic
+              setSelectedUser(contextMenu.userId)
+              onShowContactInfo?.()
               setContextMenu(null)
             }}
           >
@@ -666,7 +797,7 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             onClick={() => {
-              // Export chat logic
+              handleExportChat(contextMenu.userId)
               setContextMenu(null)
             }}
           >
@@ -698,7 +829,9 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             onClick={() => {
-              // Clear chat logic
+              if (confirm('Are you sure you want to clear this chat? This will hide all messages for you.')) {
+                handleChatAction('clear', contextMenu.userId)
+              }
               setContextMenu(null)
             }}
           >
@@ -728,7 +861,9 @@ export default function Sidebar({ onMobileUserSelect }: { onMobileUserSelect?: (
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F3EE'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             onClick={() => {
-              // Delete chat logic
+              if (confirm('Are you sure you want to delete this chat? This will permanently hide all messages for you.')) {
+                handleChatAction('delete', contextMenu.userId)
+              }
               setContextMenu(null)
             }}
           >
@@ -749,6 +884,7 @@ function UserItem({
   lastMessage,
   isSelected,
   isHovered,
+  isOnline,
   onHover,
   onLeave,
   onClick,
@@ -759,6 +895,7 @@ function UserItem({
   lastMessage?: LastMessage
   isSelected: boolean
   isHovered: boolean
+  isOnline: boolean
   onHover: () => void
   onLeave: () => void
   onClick: () => void
@@ -768,16 +905,7 @@ function UserItem({
   const hasUnreadMessage = lastMessage && !lastMessage.isRead && !isSentByMe
   const timeAgo = lastMessage ? getTimeAgo(new Date(lastMessage.createdAt)) : '3 mins ago'
 
-  // Debug logging
-  if (lastMessage) {
-    console.log(`👤 User ${user.name}:`, {
-      senderId: lastMessage.senderId,
-      currentUserId,
-      isSentByMe,
-      isRead: lastMessage.isRead,
-      hasUnreadMessage,
-    })
-  }
+ 
 
   return (
     <div
@@ -786,29 +914,24 @@ function UserItem({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       onContextMenu={onContextMenu}
-      className="relative cursor-pointer transition"
+      className="relative cursor-pointer transition px-4 md:px-6"
       style={{
         height: '80px',
         display: 'flex',
         alignItems: 'center',
-        paddingLeft: '24px',
-        paddingRight: '24px',
         gap: '12px'
       }}
     >
       {/* Avatar, Name, and Message Container */}
       <div 
-        className="flex items-center flex-1"
+        className="flex items-center flex-1 min-w-0 overflow-hidden"
         style={{
           height: '64px',
           borderRadius: '12px',
           padding: '12px',
           gap: '12px',
           backgroundColor: isSelected ? '#F3F3EE' : (isHovered ? '#F8F8F5' : 'transparent'),
-          transition: 'background-color 0.2s ease',
-          minWidth: 0,
-          maxWidth: '100%',
-          overflow: 'hidden'
+          transition: 'background-color 0.2s ease'
         }}
       >
         {/* Avatar */}
@@ -837,15 +960,25 @@ function UserItem({
               {user.name?.[0] || user.email[0]} 
             </div>
           )}
+          {/* Online Indicator */}
+          {isOnline && (
+            <div 
+              className="absolute bottom-0 right-0 border-2 border-white"
+              style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                backgroundColor: '#22C55E'
+              }}
+            ></div>
+          )}
         </div>
         
         {/* Name, Message, and Timestamp */}
         <div 
           className="flex flex-col flex-1 min-w-0"
           style={{
-            gap: '4px',
-            overflow: 'hidden',
-            maxWidth: '100%'
+            gap: '4px'
           }}
         >
           {/* Name and Timestamp Row */}
@@ -884,28 +1017,52 @@ function UserItem({
           
           {/* Message and Check Icon Row */}
           <div 
-            className="flex items-center min-w-0"
+            className="flex items-center min-w-0 w-full"
             style={{
               gap: '8px',
               overflow: 'hidden'
             }}
           >
-            <p 
+            <div 
+              className="truncate flex items-center gap-1"
               style={{
                 fontSize: '14px',
                 lineHeight: '20px',
                 letterSpacing: '0px',
                 color: '#A1A1AA',
                 fontWeight: 400,
-                flex: 1,
-                minWidth: 0,
+                maxWidth: '140px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
               }}
             >
-              {lastMessage?.content || 'No messages yet'}
-            </p>
+              {lastMessage ? (
+                <>
+                  {lastMessage.type === 'voice' && (
+                    <span style={{ fontSize: '16px' }}>🎤</span>
+                  )}
+                  {lastMessage.type === 'file' && (
+                    <>
+                      {lastMessage.metadata?.fileType?.startsWith('image/') ? (
+                        <span style={{ fontSize: '16px' }}>🖼️</span>
+                      ) : (
+                        <span style={{ fontSize: '16px' }}>📎</span>
+                      )}
+                    </>
+                  )}
+                  <span className="truncate">
+                    {lastMessage.type === 'voice' 
+                      ? 'Voice message' 
+                      : lastMessage.type === 'file' 
+                        ? (lastMessage.metadata?.fileName || 'File') 
+                        : lastMessage.content}
+                  </span>
+                </>
+              ) : (
+                'No messages yet'
+              )}
+            </div>
             {isSentByMe && lastMessage && (
               <span 
                 className="flex-shrink-0"
