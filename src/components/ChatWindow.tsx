@@ -882,7 +882,7 @@ export default function ChatWindow({
                       {message.type === 'voice' ? (
                         <VoiceMessage
                           audioUrl={message.content}
-                          duration={message.metadata?.duration || 0}
+                          duration={Number(message.metadata?.duration) || 0}
                           isSent={isSent}
                         />
                       ) : message.type === 'file' ? (
