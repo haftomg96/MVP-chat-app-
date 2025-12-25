@@ -569,10 +569,10 @@ export default function ChatWindow({
     selectedUserId === 'ai-assistant' || onlineUsers.has(selectedUserId)
 
   return (
-    <div className="flex flex-col bg-white md:rounded-2xl md:p-2 shadow-sm overflow-hidden" style={{ height: '100vh', maxHeight: '-webkit-fill-available' }}>
+    <div className="flex-1 flex flex-col bg-white rounded-2xl md:p-2 shadow-sm overflow-hidden h-full">
       {/* Chat Header */}
       <div 
-        className="flex items-center justify-between bg-white flex-shrink-0"
+        className="flex items-center justify-between bg-white mt-3 md:mt-0 fixed md:relative top-0 left-0 right-0 z-10 md:z-auto"
         style={{
           height: '60px',
           gap: '12px',
@@ -782,12 +782,11 @@ export default function ChatWindow({
       <div 
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-3 py-3" 
+        className="flex-1 overflow-y-auto px-3 pt-20 pb-20 md:pt-3 md:pb-3 md:px-3" 
         style={{ 
           backgroundColor: '#F3F3EE',
           borderRadius: '16px',
-          gap: '12px',
-          WebkitOverflowScrolling: 'touch'
+          gap: '12px'
         }}
       >
         {/* Loading more indicator */}
@@ -1034,14 +1033,11 @@ export default function ChatWindow({
       {/* Input */}
       <form
         onSubmit={handleSendMessage}
-        className="bg-white flex-shrink-0"
+        className="bg-white mb-3 md:mb-0 fixed md:relative bottom-0 left-0 right-0 z-10 md:z-auto"
         style={{
-          height: '64px',
+          height: '48px',
           gap: '12px',
           paddingTop: '8px',
-          paddingBottom: '8px',
-          paddingLeft: '12px',
-          paddingRight: '12px',
           borderBottom: '1px solid transparent'
         }}
       >
