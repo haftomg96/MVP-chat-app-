@@ -7,13 +7,13 @@ export const onlineUsers = new Map<string, string>() // userId -> socketId
 export function initializeSocket(httpServer: HTTPServer) {
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      origin: process.env.NEXTAUTH_URL || 'http://localhost:9080',
       methods: ['GET', 'POST'],
     },
   })
 
   io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id)
+    // console.log('Client connected:', socket.id)
 
     socket.on('authenticate', async (token: string) => {
       const user = await validateSession(token)
@@ -21,7 +21,7 @@ export function initializeSocket(httpServer: HTTPServer) {
         onlineUsers.set(user.id, socket.id)
         socket.data.userId = user.id
         io.emit('user-status', { userId: user.id, online: true })
-        console.log('User authenticated:', user.email)
+        // console.log('User authenticated:', user.email)
       }
     })
 
@@ -47,7 +47,7 @@ export function initializeSocket(httpServer: HTTPServer) {
       if (userId) {
         onlineUsers.delete(userId)
         io.emit('user-status', { userId, online: false })
-        console.log('User disconnected:', userId)
+        // console.log('User disconnected:', userId)
       }
     })
   })

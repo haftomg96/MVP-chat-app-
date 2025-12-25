@@ -31,48 +31,63 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'mark-unread':
-        // Update messages to mark as unread
-        await prisma.message.updateMany({
+        // Find the last message from targetUser to current user and mark as unread
+        const lastMessage = await prisma.message.findFirst({
           where: {
             receiverId: userId,
             senderId: targetUserId,
-            isRead: true,
           },
-          data: {
-            isRead: false,
+          orderBy: {
+            createdAt: 'desc',
           },
         })
+
+        if (lastMessage) {
+          await prisma.message.update({
+            where: { id: lastMessage.id },
+            data: { isRead: false },
+          })
+        }
         return NextResponse.json({ success: true, message: 'Marked as unread' })
 
       case 'archive':
-        // Create or update conversation metadata to mark as archived
-        // Note: You'll need to add an archived field to your schema
+        // Archive functionality - can be implemented with user preferences
         return NextResponse.json({ success: true, message: 'Chat archived' })
 
       case 'mute':
-        // Create or update notification settings
+        // Mute functionality - can be implemented with user preferences
         return NextResponse.json({ success: true, message: 'Chat muted' })
 
       case 'clear':
-        // Delete all messages in the conversation
-        await prisma.message.deleteMany({
+        // Soft clear: Add userId to clearedBy array
+        await prisma.message.updateMany({
           where: {
             OR: [
               { senderId: userId, receiverId: targetUserId },
               { senderId: targetUserId, receiverId: userId },
             ],
+          },
+          data: {
+            clearedBy: {
+              push: userId,
+            },
           },
         })
         return NextResponse.json({ success: true, message: 'Chat cleared' })
 
       case 'delete':
-        // Delete all messages and conversation data
-        await prisma.message.deleteMany({
+        // Soft delete: Add userId to deletedBy array
+        await prisma.message.updateMany({
           where: {
             OR: [
               { senderId: userId, receiverId: targetUserId },
               { senderId: targetUserId, receiverId: userId },
             ],
+          },
+          data: {
+            deletedBy: {
+              push: userId,
+            },
           },
         })
         return NextResponse.json({ success: true, message: 'Chat deleted' })

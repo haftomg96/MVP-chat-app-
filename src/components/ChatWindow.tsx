@@ -4,6 +4,12 @@ import { useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
 import { useSocket } from '@/hooks/useSocket'
+import VoiceRecorder from '@/components/VoiceRecorder'
+import VoiceMessage from '@/components/VoiceMessage'
+import EmojiPicker from '@/components/EmojiPicker'
+import FileMessage from '@/components/FileMessage'
+import SkeletonLoader from '@/components/SkeletonLoader'
+import ReactionPicker from '@/components/ReactionPicker'
 
 interface Message {
   id: string
@@ -12,6 +18,9 @@ interface Message {
   receiverId: string
   createdAt: string
   isRead: boolean
+  type?: string
+  metadata?: any
+  reactions?: Record<string, string[]>
 }
 
 export default function ChatWindow({
@@ -27,15 +36,31 @@ export default function ChatWindow({
   const [newMessage, setNewMessage] = useState('')
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [messagesLoading, setMessagesLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showReactionPicker, setShowReactionPicker] = useState<{ messageId: string; x: number; y: number } | null>(null)
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const socket = useSocket()
 
   useEffect(() => {
     if (selectedUserId && selectedUserId !== 'ai-assistant') {
-      fetchMessages()
+      setMessagesLoading(true)
+      fetchMessages().then(() => {
+        setMessagesLoading(false)
+        // Scroll to bottom after messages are loaded
+        setTimeout(() => {
+          scrollToBottom()
+        }, 100)
+      })
       fetchUserDetails()
       markMessagesAsRead()
     } else if (selectedUserId === 'ai-assistant') {
@@ -46,6 +71,11 @@ export default function ChatWindow({
         email: 'ai@assistant.com',
         picture: null,
       })
+      setMessagesLoading(false)
+      // Scroll to bottom for AI assistant too
+      setTimeout(() => {
+        scrollToBottom()
+      }, 100)
     }
     
     // Reset typing indicator when switching conversations
@@ -82,20 +112,15 @@ export default function ChatWindow({
   // Listen for incoming messages and typing events
   useEffect(() => {
     if (!socket) {
-      console.log('⚠️ Socket not initialized yet')
       return
     }
 
-    console.log('🎧 Setting up socket listeners for user:', selectedUserId)
-
     const handleReceiveMessage = (message: any) => {
-      console.log('📨 Received message via socket:', message)
       // Only add message if it's for the current conversation
       if (
         (message.senderId === selectedUserId && message.receiverId === user?.id) ||
         (message.senderId === user?.id && message.receiverId === selectedUserId)
       ) {
-        console.log('✅ Message is for current conversation, adding to chat')
         addMessage(message)
         
         // If we received a message (not sent by us), mark it as read and notify sender
@@ -108,21 +133,16 @@ export default function ChatWindow({
             receiverId: user?.id
           })
         }
-      } else {
-        console.log('⚠️ Message is for different conversation, ignoring')
       }
     }
 
     const handleUserTyping = (data: { senderId: string; isTyping: boolean }) => {
-      console.log('⌨️ Received typing event:', data)
       if (data.senderId === selectedUserId) {
-        console.log('✅ Setting typing indicator:', data.isTyping)
         setIsTyping(data.isTyping)
       }
     }
 
     const handleMessageRead = (data: { messageId: string; receiverId: string }) => {
-      console.log('✅ Message read receipt received:', data)
       // Update the message status to read in the UI
       setMessages(
         messages.map((msg) =>
@@ -131,15 +151,25 @@ export default function ChatWindow({
       )
     }
 
+    const handleMessageReaction = (data: { messageId: string; reactions: any }) => {
+      // Update the message reactions in the UI
+      setMessages(
+        messages.map((msg) =>
+          msg.id === data.messageId ? { ...msg, reactions: data.reactions } : msg
+        )
+      )
+    }
+
     socket.on('receive-message', handleReceiveMessage)
     socket.on('user-typing', handleUserTyping)
     socket.on('message-read', handleMessageRead)
+    socket.on('message-reaction', handleMessageReaction)
 
     return () => {
-      console.log('🧹 Cleaning up socket listeners')
       socket.off('receive-message', handleReceiveMessage)
       socket.off('user-typing', handleUserTyping)
       socket.off('message-read', handleMessageRead)
+      socket.off('message-reaction', handleMessageReaction)
     }
   }, [socket, selectedUserId, user?.id, addMessage])
 
@@ -148,7 +178,6 @@ export default function ChatWindow({
 
     // Emit typing event
     if (socket && selectedUserId && selectedUserId !== 'ai-assistant') {
-      console.log('⌨️ Emitting typing event to:', selectedUserId)
       socket.emit('typing', {
         senderId: user?.id,
         receiverId: selectedUserId,
@@ -162,7 +191,6 @@ export default function ChatWindow({
 
       // Set new timeout to stop typing indicator
       const timeout = setTimeout(() => {
-        console.log('⌨️ Stopping typing indicator')
         if (socket && selectedUserId) {
           socket.emit('typing', {
             senderId: user?.id,
@@ -185,19 +213,50 @@ export default function ChatWindow({
     }
   }, [typingTimeout])
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (loadMore = false) => {
     if (!selectedUserId || selectedUserId === 'ai-assistant') return
 
     try {
-      const res = await fetch(`/api/messages?userId=${selectedUserId}`, {
+      let url = `/api/messages?userId=${selectedUserId}&limit=30`
+      
+      // If loading more, get messages before the oldest one
+      if (loadMore && messages.length > 0) {
+        const oldestMessage = messages[0]
+        url += `&before=${oldestMessage.createdAt}`
+      }
+      
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         const data = await res.json()
-        setMessages(data)
+        if (loadMore) {
+          // Prepend older messages
+          setMessages([...data.messages, ...messages])
+        } else {
+          // Initial load
+          setMessages(data.messages)
+        }
+        setHasMore(data.hasMore)
       }
     } catch (error) {
       console.error('Failed to fetch messages:', error)
+    }
+  }
+
+  // Handle scroll to load more messages
+  const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget
+    // Check if scrolled to top
+    if (element.scrollTop === 0 && hasMore && !loadingMore) {
+      setLoadingMore(true)
+      const previousScrollHeight = element.scrollHeight
+      await fetchMessages(true)
+      setLoadingMore(false)
+      // Maintain scroll position
+      setTimeout(() => {
+        element.scrollTop = element.scrollHeight - previousScrollHeight
+      }, 0)
     }
   }
 
@@ -296,15 +355,11 @@ export default function ChatWindow({
 
         if (res.ok) {
           const message = await res.json()
-          console.log('✅ Message saved to DB:', message)
           addMessage(message)
 
           // Send via WebSocket
           if (socket) {
-            console.log('📤 Emitting message via socket:', message)
             socket.emit('send-message', message)
-          } else {
-            console.log('⚠️ Socket not available, message not sent in real-time')
           }
         }
       }
@@ -312,6 +367,117 @@ export default function ChatWindow({
       console.error('Failed to send message:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSendVoice = async (audioBlob: Blob, duration: number) => {
+    if (!selectedUserId || selectedUserId === 'ai-assistant') {
+      setShowVoiceRecorder(false)
+      return
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'voice.webm')
+      formData.append('receiverId', selectedUserId)
+      formData.append('duration', duration.toString())
+
+      const res = await fetch('/api/voice-messages', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (res.ok) {
+        const message = await res.json()
+        addMessage(message)
+
+        // Send via WebSocket
+        if (socket) {
+          socket.emit('send-message', message)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send voice message:', error)
+    } finally {
+      setShowVoiceRecorder(false)
+    }
+  }
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !selectedUserId || selectedUserId === 'ai-assistant') return
+
+    try {
+      setLoading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('receiverId', selectedUserId)
+
+      const res = await fetch('/api/file-messages', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (res.ok) {
+        const message = await res.json()
+        addMessage(message)
+
+        // Send via WebSocket
+        if (socket) {
+          socket.emit('send-message', message)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send file:', error)
+    } finally {
+      setLoading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage((prev) => prev + emoji)
+  }
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    try {
+      const res = await fetch('/api/messages/reactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ messageId, emoji }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        // Update message in local state
+        setMessages(
+          messages.map((msg) =>
+            msg.id === messageId ? { ...msg, reactions: data.reactions } : msg
+          )
+        )
+
+        // Emit via socket for real-time update
+        if (socket) {
+          socket.emit('message-reaction', {
+            messageId,
+            reactions: data.reactions,
+            receiverId: selectedUserId,
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add reaction:', error)
     }
   }
 
@@ -365,6 +531,10 @@ export default function ChatWindow({
     return groups
   }
 
+  if (messagesLoading) {
+    return <SkeletonLoader type="chat" />
+  }
+
   if (!selectedUserId) {
     return (
       <div className="flex-1 bg-white rounded-2xl p-4 flex items-center justify-center bg-gray-50">
@@ -402,7 +572,7 @@ export default function ChatWindow({
     <div className="flex-1 flex flex-col bg-white rounded-2xl md:p-2 shadow-sm overflow-hidden h-full">
       {/* Chat Header */}
       <div 
-        className="flex items-center justify-between bg-white"
+        className="flex items-center justify-between bg-white mt-3 md:mt-0 fixed md:relative top-0 left-0 right-0 z-10 md:z-auto"
         style={{
           height: '60px',
           gap: '12px',
@@ -610,14 +780,25 @@ export default function ChatWindow({
 
       {/* Messages */}
       <div 
-        className="flex-1 overflow-y-auto" 
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto pt-20 pb-22 px-3 md:pt-3 md:pb-3 md:px-3" 
         style={{ 
           backgroundColor: '#F3F3EE',
           borderRadius: '16px',
-          padding: '12px',
           gap: '12px'
         }}
       >
+        {/* Loading more indicator */}
+        {loadingMore && (
+          <div className="flex justify-center py-2">
+            <div className="flex items-center space-x-2 text-gray-500 text-sm">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-[#1E9A80] rounded-full animate-spin"></div>
+              <span>Loading older messages...</span>
+            </div>
+          </div>
+        )}
+        
         {groupMessagesByDate(messages).map((group, groupIndex) => (
           <div key={groupIndex}>
             {/* Date Separator */}
@@ -634,42 +815,134 @@ export default function ChatWindow({
                 (messageIndex < group.messages.length - 1 && 
                  new Date(group.messages[messageIndex + 1].createdAt).getTime() - new Date(message.createdAt).getTime() > 300000)
               
+              const reactions = message.reactions || {}
+              const hasReactions = Object.keys(reactions).length > 0
+              
               return (
                 <div
                   key={message.id}
-                  className={`flex flex-col ${isSent ? 'items-end' : 'items-start'} mb-2`}
+                  className={`flex flex-col ${isSent ? 'items-end' : 'items-start'}`}
+                  style={{
+                    marginBottom: showTime ? '12px' : '5px'
+                  }}
+                  onMouseEnter={() => setHoveredMessageId(message.id)}
+                  onMouseLeave={() => setHoveredMessageId(null)}
                 >
-                  <div
-                    className={`max-w-[70%] ${
-                      isSent
-                        ? ''
-                        : 'bg-white text-[#111625] shadow-sm'
-                    }`}
-                    style={{
-                      padding: '12px',
-                      borderTopLeftRadius: '12px',
-                      borderTopRightRadius: '12px',
-                      borderBottomRightRadius: isSent ? '4px' : '12px',
-                      borderBottomLeftRadius: isSent ? '12px' : '4px',
-                      backgroundColor: isSent ? '#F0FDF4' : undefined,
-                    }}
-                  >
-                    <p 
-                      className="whitespace-pre-wrap break-words"
+                  <div className="relative">
+                    <div
+                      className={`${
+                        isSent
+                          ? 'bg-[#F0FDF4]'
+                          : 'bg-white text-[#111625] shadow-sm'
+                      }`}
                       style={{
-                        fontSize: '12px',
-                        lineHeight: '16px',
-                        fontWeight: 400,
-                        color: isSent ? '#111625' : '#111625',
-                        letterSpacing: '0px'
+                        padding: message.type === 'voice' ? '0' : '12px',
+                        borderTopLeftRadius: '12px',
+                        borderTopRightRadius: '12px',
+                        borderBottomRightRadius: isSent ? '4px' : '12px',
+                        borderBottomLeftRadius: isSent ? '12px' : '4px',
+                        backgroundColor: message.type === 'voice' ? 'transparent' : undefined,
+                        maxWidth: 'min(85vw, 400px)',
+                        display: 'inline-block',
+                        position: 'relative'
                       }}
                     >
-                      {message.content}
-                    </p>
+                      {/* Display Reactions - Half outside message on bottom */}
+                      {hasReactions && (
+                        <div 
+                          className="absolute flex flex-wrap gap-1"
+                          style={{
+                            bottom: '-12px',
+                            left: '12px',
+                            zIndex: 5
+                          }}
+                        >
+                          {Object.entries(reactions).map(([emoji, users]) => {
+                            const userList = users as string[]
+                            if (userList.length === 0) return null
+                            
+                            return (
+                              <button
+                                key={emoji}
+                                onClick={() => handleReaction(message.id, emoji)}
+                                className="flex items-center justify-center rounded-full transition shadow-sm bg-white hover:bg-gray-50"
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  padding: '2px'
+                                }}
+                              >
+                                <span style={{ fontSize: '14px', lineHeight: '14px' }}>{emoji}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {message.type === 'voice' ? (
+                        <VoiceMessage
+                          audioUrl={message.content}
+                          duration={message.metadata?.duration || 0}
+                          isSent={isSent}
+                        />
+                      ) : message.type === 'file' ? (
+                        <FileMessage
+                          fileUrl={message.content}
+                          fileName={message.metadata?.fileName || 'File'}
+                          fileSize={message.metadata?.fileSize || 0}
+                          fileType={message.metadata?.fileType || ''}
+                          isSent={isSent}
+                        />
+                      ) : (
+                        <p 
+                          style={{
+                            fontSize: '12px',
+                            lineHeight: '16px',
+                            fontWeight: 400,
+                            color: '#111625',
+                            letterSpacing: '0px',
+                            margin: 0,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {message.content}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Reaction Button - Shows on hover */}
+                    {hoveredMessageId === message.id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          setShowReactionPicker({
+                            messageId: message.id,
+                            x: rect.left + rect.width / 2,
+                            y: rect.top,
+                          })
+                        }}
+                        className="absolute bg-white border border-gray-200 rounded-full shadow-lg hover:bg-gray-50 hover:scale-110 transition-all duration-200"
+                        style={{
+                          top: '-12px',
+                          [isSent ? 'left' : 'right']: '-12px',
+                          width: '28px',
+                          height: '28px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 10
+                        }}
+                        title="Add reaction"
+                      >
+                        <span style={{ fontSize: '16px', lineHeight: '16px' }}>😊</span>
+                      </button>
+                    )}
                   </div>
                   {showTime && (
                     <div
-                      className={`mt-1 flex items-center gap-1.5`}
+                      className={`mt-1 flex items-center gap-1`}
                       style={{ 
                         fontSize: '12px',
                         lineHeight: '16px',
@@ -760,7 +1033,7 @@ export default function ChatWindow({
       {/* Input */}
       <form
         onSubmit={handleSendMessage}
-        className="bg-white"
+        className="bg-white mb-3 md:mb-0 fixed md:relative bottom-0 left-0 right-0 z-10 md:z-auto"
         style={{
           height: '48px',
           gap: '12px',
@@ -805,7 +1078,8 @@ export default function ChatWindow({
             {/* Microphone Icon */}
             <button
               type="button"
-              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              onClick={() => setShowVoiceRecorder(true)}
+              className="flex items-center justify-center flex-shrink-0 hover:bg-gray-100 transition"
               style={{
                 width: '24px',
                 height: '24px',
@@ -824,7 +1098,8 @@ export default function ChatWindow({
             {/* Emoji Icon */}
             <button
               type="button"
-              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="flex items-center justify-center flex-shrink-0 hover:bg-gray-100 transition relative"
               style={{
                 width: '24px',
                 height: '24px',
@@ -843,7 +1118,8 @@ export default function ChatWindow({
             {/* Attachment Icon */}
             <button
               type="button"
-              className="hidden md:flex items-center justify-center flex-shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center flex-shrink-0 hover:bg-gray-100 transition"
               style={{
                 width: '24px',
                 height: '24px',
@@ -858,6 +1134,15 @@ export default function ChatWindow({
                 style={{ width: '20px', height: '20px' }}
               />
             </button>
+
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileSelect}
+              className="hidden"
+              accept="*/*"
+            />
 
             {/* Send Button */}
             <button
@@ -892,6 +1177,31 @@ export default function ChatWindow({
           </div>
         </div>
       </form>
+
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <EmojiPicker
+          onSelect={handleEmojiSelect}
+          onClose={() => setShowEmojiPicker(false)}
+        />
+      )}
+
+      {/* Voice Recorder Modal */}
+      {showVoiceRecorder && (
+        <VoiceRecorder
+          onSend={handleSendVoice}
+          onCancel={() => setShowVoiceRecorder(false)}
+        />
+      )}
+
+      {/* Reaction Picker */}
+      {showReactionPicker && (
+        <ReactionPicker
+          onSelect={(emoji) => handleReaction(showReactionPicker.messageId, emoji)}
+          onClose={() => setShowReactionPicker(null)}
+          position={{ x: showReactionPicker.x, y: showReactionPicker.y }}
+        />
+      )}
     </div>
   )
 }

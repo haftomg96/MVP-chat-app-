@@ -11,7 +11,6 @@ export function useSocket() {
   useEffect(() => {
     if (!token) return
 
-    console.log('Initializing socket connection...')
     const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000', {
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -22,27 +21,23 @@ export function useSocket() {
     socketRef.current = socket
 
     socket.on('connect', () => {
-      console.log('✅ Socket connected:', socket.id)
       socket.emit('authenticate', token)
     })
 
     socket.on('receive-message', (message) => {
-      console.log('📨 Received message:', message)
       addMessage(message)
     })
 
     socket.on('user-status', ({ userId, online }) => {
-      console.log('👤 User status update:', userId, online ? 'online' : 'offline')
       setUserOnline(userId, online)
     })
 
     socket.on('online-users', (users) => {
-      console.log('👥 Online users:', users)
       setOnlineUsers(users)
     })
 
     socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected')
+      // Handle disconnect
     })
 
     socket.on('connect_error', (error) => {
@@ -50,7 +45,6 @@ export function useSocket() {
     })
 
     return () => {
-      console.log('Cleaning up socket connection')
       socket.disconnect()
     }
   }, [token, addMessage, setUserOnline, setOnlineUsers])

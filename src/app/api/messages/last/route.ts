@@ -14,8 +14,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    console.log('📨 Fetching last messages for user:', decoded.userId)
-
     // Get all users except current user
     const users = await prisma.user.findMany({
       where: {
@@ -23,8 +21,6 @@ export async function GET(req: NextRequest) {
       },
       select: { id: true },
     })
-
-    console.log('📨 Found users:', users.length)
 
     // For each user, get the last message in conversation
     const lastMessages: Record<string, any> = {}
@@ -36,6 +32,13 @@ export async function GET(req: NextRequest) {
             { senderId: decoded.userId, receiverId: user.id },
             { senderId: user.id, receiverId: decoded.userId },
           ],
+          // Exclude messages that are deleted or cleared by current user
+          NOT: {
+            OR: [
+              { deletedBy: { has: decoded.userId } },
+              { clearedBy: { has: decoded.userId } },
+            ],
+          },
         },
         orderBy: { createdAt: 'desc' },
         select: {
@@ -43,16 +46,18 @@ export async function GET(req: NextRequest) {
           createdAt: true,
           isRead: true,
           senderId: true,
+          type: true,
+          metadata: true,
         },
       })
 
       if (lastMessage) {
         lastMessages[user.id] = lastMessage
-        console.log(`📨 Last message with ${user.id}:`, lastMessage.content.substring(0, 30))
+        // console.log(`📨 Last message with ${user.id}:`, lastMessage.content.substring(0, 30))
       }
     }
 
-    console.log('📨 Returning last messages for', Object.keys(lastMessages).length, 'conversations')
+    // console.log('📨 Returning last messages for', Object.keys(lastMessages).length, 'conversations')
 
     return NextResponse.json(lastMessages)
   } catch (error) {

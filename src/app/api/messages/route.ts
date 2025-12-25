@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const otherUserId = searchParams.get('userId')
+    const limit = parseInt(searchParams.get('limit') || '30')
+    const before = searchParams.get('before') // cursor for pagination
 
     if (!otherUserId) {
       return NextResponse.json(
@@ -24,17 +26,35 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const messages = await prisma.message.findMany({
-      where: {
+    const whereClause: any = {
+      OR: [
+        { senderId: currentUser.id, receiverId: otherUserId },
+        { senderId: otherUserId, receiverId: currentUser.id },
+      ],
+      // Exclude messages that are deleted or cleared by current user
+      NOT: {
         OR: [
-          { senderId: currentUser.id, receiverId: otherUserId },
-          { senderId: otherUserId, receiverId: currentUser.id },
+          { deletedBy: { has: currentUser.id } },
+          { clearedBy: { has: currentUser.id } },
         ],
       },
+    }
+
+    // Add cursor for pagination
+    if (before) {
+      whereClause.createdAt = { lt: new Date(before) }
+    }
+
+    const messages = await prisma.message.findMany({
+      where: whereClause,
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc', // Get newest first for pagination
       },
+      take: limit,
     })
+
+    // Reverse to show oldest first in UI
+    const reversedMessages = messages.reverse()
 
     // Mark messages as read
     await prisma.message.updateMany({
@@ -48,7 +68,10 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    return NextResponse.json(messages)
+    return NextResponse.json({
+      messages: reversedMessages,
+      hasMore: messages.length === limit,
+    })
   } catch (error) {
     console.error('Get messages error:', error)
     return NextResponse.json(

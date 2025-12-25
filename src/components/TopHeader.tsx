@@ -80,8 +80,8 @@ export default function TopHeader() {
           </div>
         </div>
 
-        {/* Search Icon - Visible on mobile */}
-        <button className="lg:hidden p-2 hover:bg-gray-50 rounded-lg transition">
+        {/* Search Icon - Hidden on mobile */}
+        <button className="hidden md:flex p-2 hover:bg-gray-50 rounded-lg transition">
           <svg
             className="w-5 h-5 text-gray-600"
             fill="none"
@@ -99,7 +99,7 @@ export default function TopHeader() {
 
         {/* Notification */}
         <button 
-          className="hidden sm:flex items-center justify-center transition hover:bg-gray-50 relative"
+          className="hidden md:flex items-center justify-center transition hover:bg-gray-50 relative"
           style={{
             width: '32px',
             height: '32px',
@@ -156,6 +156,7 @@ export default function TopHeader() {
 
         {/* Vertical Separator */}
         <div 
+          className="hidden md:block"
           style={{
             width: '0px',
             height: '20px',
@@ -199,7 +200,7 @@ export default function TopHeader() {
               </div>
             )}
             <svg
-              className="hidden md:block"
+              className="block"
               style={{
                 width: '16px',
                 height: '16px',

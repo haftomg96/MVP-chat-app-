@@ -64,7 +64,10 @@ export default function ChatPage() {
           <div className={`${
             showMobileSidebar ? 'flex' : 'hidden'
           } md:flex w-full md:w-auto`}>
-            <Sidebar onMobileUserSelect={() => setShowMobileSidebar(false)} />
+            <Sidebar 
+              onMobileUserSelect={() => setShowMobileSidebar(false)}
+              onShowContactInfo={() => setShowContactInfo(true)}
+            />
           </div>
           
           {/* Chat Window - Full screen on mobile, side panel on desktop */}

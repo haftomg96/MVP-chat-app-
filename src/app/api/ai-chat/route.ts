@@ -49,7 +49,7 @@ async function generateAIResponse(message: string): Promise<string> {
 
     for (const model of freeModels) {
       try {
-        console.log(`Trying model: ${model}`)
+        // console.log(`Trying model: ${model}`)
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -77,16 +77,16 @@ async function generateAIResponse(message: string): Promise<string> {
 
         if (response.ok) {
           const data = await response.json()
-          console.log(`✅ Success with model: ${model}`)
+          // console.log(`✅ Success with model: ${model}`)
           return data.choices[0].message.content
         } else {
           const errorData = await response.json()
-          console.log(`❌ Model ${model} failed:`, errorData.error?.message)
+          // console.log(`❌ Model ${model} failed:`, errorData.error?.message)
           // Try next model
           continue
         }
       } catch (error) {
-        console.log(`❌ Model ${model} error:`, error)
+        // console.log(`❌ Model ${model} error:`, error)
         // Try next model
         continue
       }
