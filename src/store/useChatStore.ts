@@ -26,7 +26,14 @@ export const useChatStore = create<ChatState>((set) => ({
   onlineUsers: new Set(),
   setSelectedUser: (userId) => set({ selectedUserId: userId }),
   addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
+    set((state) => {
+      // Check if message already exists (prevent duplicates)
+      const exists = state.messages.some((m) => m.id === message.id)
+      if (exists) {
+        return state // Don't add duplicate
+      }
+      return { messages: [...state.messages, message] }
+    }),
   setMessages: (messages) => set({ messages }),
   setUserOnline: (userId, online) =>
     set((state) => {
