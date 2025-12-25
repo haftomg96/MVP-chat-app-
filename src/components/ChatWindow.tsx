@@ -782,7 +782,7 @@ export default function ChatWindow({
       <div 
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto pt-20 pb-22 px-3 md:pt-3 md:pb-3 md:px-3" 
+        className="flex-1 overflow-y-auto px-3 pt-20 pb-20 md:pt-3 md:pb-3 md:px-3" 
         style={{ 
           backgroundColor: '#F3F3EE',
           borderRadius: '16px',
