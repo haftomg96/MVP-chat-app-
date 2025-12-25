@@ -115,18 +115,16 @@ export default function Sidebar({
     if (!socket) return
 
     const handleReceiveMessage = (message: any) => {
-      console.log('📨 Sidebar received message via socket:', message)
-      
       // Determine which user this message is with
       const otherUserId = message.senderId === user?.id ? message.receiverId : message.senderId
       
-      // Update last message for this user
+      // Update last message for this user immediately
       setLastMessages((prev) => ({
         ...prev,
         [otherUserId]: {
           content: message.content,
           createdAt: message.createdAt,
-          isRead: message.isRead,
+          isRead: message.senderId !== user?.id ? false : message.isRead, // Mark as unread if from other user
           senderId: message.senderId,
           type: message.type,
           metadata: message.metadata,
@@ -219,10 +217,30 @@ export default function Sidebar({
     }
   }
 
-  const filteredUsers = users.filter((u) =>
-    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filter and sort users: online first, then by last message time
+  const filteredUsers = users
+    .filter((u) =>
+      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      // First, sort by online status (online users first)
+      const aOnline = onlineUsers.has(a.id)
+      const bOnline = onlineUsers.has(b.id)
+      
+      if (aOnline && !bOnline) return -1
+      if (!aOnline && bOnline) return 1
+      
+      // Then sort by last message time (most recent first)
+      const aLastMsg = lastMessages[a.id]
+      const bLastMsg = lastMessages[b.id]
+      
+      if (!aLastMsg && !bLastMsg) return 0
+      if (!aLastMsg) return 1
+      if (!bLastMsg) return -1
+      
+      return new Date(bLastMsg.createdAt).getTime() - new Date(aLastMsg.createdAt).getTime()
+    })
 
   const handleUserSelect = (userId: string) => {
     setSelectedUser(userId)
